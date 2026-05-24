@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/kovaron/ai-secrets-manager/internal/audit"
 	"github.com/kovaron/ai-secrets-manager/internal/store"
 	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
 )
@@ -32,7 +33,7 @@ func TestReverseProxyInjectsAndForwards(t *testing.T) {
 		Inject: upstreams.InjectRule{Type: "bearer", SecretRef: "fake://"},
 	})
 
-	rp := NewReverseProxy(reg, fakeSecrets{v: "upstream-token"})
+	rp := NewReverseProxy(reg, fakeSecrets{v: "upstream-token"}, audit.New(io.Discard))
 	h := InjectMiddleware(rp)
 	tok := &store.Token{ID: "t", UpstreamID: "u"}
 	req := httptest.NewRequest("GET", "/u/u/echo", nil)

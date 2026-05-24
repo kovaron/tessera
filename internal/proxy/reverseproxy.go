@@ -7,7 +7,9 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
 
+	"github.com/kovaron/ai-secrets-manager/internal/audit"
 	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
 )
 
@@ -15,7 +17,7 @@ type SecretResolver interface {
 	Resolve(ctx context.Context, ref string) ([]byte, error)
 }
 
-func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver) http.Handler {
+func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver, log *audit.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tok, ok := TokenFromContext(r.Context())
 		if !ok {
@@ -59,6 +61,39 @@ func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver) http.Handl
 				http.Error(w, fmt.Sprintf("upstream: %v", e), http.StatusBadGateway)
 			},
 		}
-		rp.ServeHTTP(w, r)
+		start := time.Now()
+		sw := &statusWriter{ResponseWriter: w, status: 200}
+		rp.ServeHTTP(sw, r)
+		log.Emit(audit.Event{
+			TokenID:        tok.ID,
+			TokenLabel:     tok.Label,
+			UpstreamID:     id,
+			Method:         r.Method,
+			Path:           r.URL.Path,
+			QueryKeys:      keysOf(r.URL.Query()),
+			Decision:       "allow",
+			UpstreamStatus: sw.status,
+			Status:         sw.status,
+			LatencyMS:      time.Since(start).Milliseconds(),
+			RemoteAddr:     r.RemoteAddr,
+		})
 	})
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (s *statusWriter) WriteHeader(code int) {
+	s.status = code
+	s.ResponseWriter.WriteHeader(code)
+}
+
+func keysOf(v map[string][]string) []string {
+	out := make([]string, 0, len(v))
+	for k := range v {
+		out = append(out, k)
+	}
+	return out
 }
