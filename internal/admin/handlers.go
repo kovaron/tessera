@@ -44,6 +44,7 @@ func NewHandlers(st *State) *Handlers {
 	h.registerPolicies()
 	h.registerMint()
 	h.registerRevoke()
+	h.registerAttenuate()
 	return h
 }
 
