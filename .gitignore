@@ -5,3 +5,10 @@
 *.db-journal
 .DS_Store
 coverage.out
+
+# Tauri UI
+ui/node_modules/
+ui/dist/
+ui/src-tauri/target/
+ui/src-tauri/binaries/
+ui/src/types/bindings.ts
