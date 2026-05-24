@@ -12,7 +12,9 @@ export function pushEvent(ev: AuditEvent) {
 
 export function getBuffer() { return buf; }
 
-export function subscribe(cb: () => void) {
+export function subscribe(cb: () => void): () => void {
   subscribers.add(cb);
-  return () => subscribers.delete(cb);
+  return () => {
+    subscribers.delete(cb);
+  };
 }
