@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -24,7 +25,20 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:8080", "listen addr")
 	dbPath := flag.String("db", os.ExpandEnv("$HOME/.proxyd/data.db"), "sqlite path")
 	sockPath := flag.String("admin-socket", os.ExpandEnv("$HOME/.proxyd/admin.sock"), "admin socket")
+	auditPath := flag.String("audit-log", os.ExpandEnv("$HOME/.proxyd/audit.log"), "audit log file path")
+	auditMax := flag.Int64("audit-rotate-bytes", 100*1024*1024, "audit log rotation size")
+	auditKeep := flag.Int("audit-keep", 5, "audit log rotations to keep")
 	flag.Parse()
+
+	if err := os.MkdirAll(filepath.Dir(*auditPath), 0o700); err != nil {
+		log.Fatal(err)
+	}
+	auditFile, err := audit.NewRotatingWriter(*auditPath, *auditMax, *auditKeep)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer auditFile.Close()
+	auditLogger := audit.New(os.Stdout, auditFile)
 
 	s, err := store.OpenSQLite(*dbPath)
 	if err != nil {
@@ -61,7 +75,7 @@ func main() {
 		PolicyCache: authz.NewCache(),
 		Upstreams:   reg,
 		Secrets:     secrets.ByteResolver{Cache: cache},
-		Audit:       audit.New(os.Stdout),
+		Audit:       auditLogger,
 		IsUnlocked:  st.Unlocked,
 		DEK:         st.DEK,
 	}
