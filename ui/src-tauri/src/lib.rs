@@ -1,22 +1,90 @@
-mod error;
-mod types;
-mod socket;
-mod commands;
 mod audit;
-mod keychain;
 mod clipboard;
+mod commands;
+mod error;
+mod keychain;
+mod socket;
+mod types;
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+use commands::AppState;
+use tauri_specta::collect_commands;
+use tokio::sync::RwLock;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(debug_assertions)]
+    let _ = export_bindings();
+
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_fs::init())
+        .manage(AppState {
+            socket: RwLock::new(socket::default_socket_path()),
+            audit_path: RwLock::new(default_audit_path()),
+        })
+        .invoke_handler(tauri::generate_handler![
+            commands::status::get_status,
+            commands::status::unlock,
+            commands::status::lock,
+            commands::upstreams::list_upstreams,
+            commands::upstreams::upsert_upstream,
+            commands::upstreams::delete_upstream,
+            commands::policies::create_policy,
+            commands::tokens::list_tokens,
+            commands::tokens::mint_token,
+            commands::tokens::revoke_token,
+            commands::tokens::attenuate_token,
+            commands::bootstrap::detect_state,
+            commands::bootstrap::run_bootstrap,
+            keychain::keychain_save,
+            keychain::keychain_load,
+            keychain::keychain_delete,
+            clipboard::clipboard_set_with_clear,
+        ])
+        .setup(|app| {
+            let handle = app.handle().clone();
+            let path = default_audit_log_path();
+            audit::start_tailer(handle, path);
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn default_audit_path() -> String {
+    default_audit_log_path().to_string_lossy().into_owned()
+}
+
+fn default_audit_log_path() -> std::path::PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+        .join(".proxyd")
+        .join("audit.log")
+}
+
+#[cfg(debug_assertions)]
+fn export_bindings() -> Result<(), Box<dyn std::error::Error>> {
+    use specta_typescript::Typescript;
+    let builder = tauri_specta::Builder::<tauri::Wry>::new().commands(collect_commands![
+        commands::status::get_status,
+        commands::status::unlock,
+        commands::status::lock,
+        commands::upstreams::list_upstreams,
+        commands::upstreams::upsert_upstream,
+        commands::upstreams::delete_upstream,
+        commands::policies::create_policy,
+        commands::tokens::list_tokens,
+        commands::tokens::mint_token,
+        commands::tokens::revoke_token,
+        commands::tokens::attenuate_token,
+        commands::bootstrap::detect_state,
+        commands::bootstrap::run_bootstrap,
+        keychain::keychain_save,
+        keychain::keychain_load,
+        keychain::keychain_delete,
+        clipboard::clipboard_set_with_clear,
+    ]);
+    builder.export(Typescript::default(), "../src/types/bindings.ts")?;
+    Ok(())
 }
