@@ -7,6 +7,7 @@ import (
 
 	"github.com/kovaron/ai-secrets-manager/internal/crypto"
 	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
 )
 
 type State struct {
@@ -33,10 +34,18 @@ func (s *State) DEK() []byte {
 type Handlers struct {
 	mux *http.ServeMux
 	st  *State
+	reg *upstreams.Registry
 }
 
+// NewHandlers creates admin HTTP handlers. reg may be nil (no live upstream sync).
 func NewHandlers(st *State) *Handlers {
-	h := &Handlers{mux: http.NewServeMux(), st: st}
+	return NewHandlersWithRegistry(st, nil)
+}
+
+// NewHandlersWithRegistry wires in the upstream registry so POST /v1/upstreams
+// updates the in-memory registry as well as the store.
+func NewHandlersWithRegistry(st *State, reg *upstreams.Registry) *Handlers {
+	h := &Handlers{mux: http.NewServeMux(), st: st, reg: reg}
 	h.mux.HandleFunc("/v1/status", h.status)
 	h.mux.HandleFunc("/v1/unlock", h.unlock)
 	h.mux.HandleFunc("/v1/lock", h.lock)

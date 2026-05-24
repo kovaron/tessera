@@ -36,17 +36,18 @@ func main() {
 
 	kp := &crypto.PassphraseProvider{Params: crypto.DefaultArgon2()}
 	st := admin.NewState(s, kp)
-	adminH := admin.NewHandlers(st)
-	sock := &admin.SocketServer{Path: *sockPath, H: adminH}
-	if err := sock.Start(); err != nil {
-		log.Fatal(err)
-	}
-	defer sock.Stop(context.Background())
 
 	reg := upstreams.NewRegistry()
 	if err := reg.HydrateFromStore(context.Background(), s); err != nil {
 		log.Fatal(err)
 	}
+
+	adminH := admin.NewHandlersWithRegistry(st, reg)
+	sock := &admin.SocketServer{Path: *sockPath, H: adminH}
+	if err := sock.Start(); err != nil {
+		log.Fatal(err)
+	}
+	defer sock.Stop(context.Background())
 
 	secReg := secrets.NewRegistry()
 	secReg.Register(secrets.NewEnvProvider())

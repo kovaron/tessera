@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
 )
 
 func (h *Handlers) registerUpstreams() {
@@ -30,6 +31,14 @@ func (h *Handlers) upstreamsRoot(w http.ResponseWriter, r *http.Request) {
 		if err := h.st.store.UpsertUpstream(r.Context(), u); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
+		}
+		// Keep the in-memory registry in sync so the data plane sees the new upstream immediately.
+		if h.reg != nil {
+			var rule upstreams.InjectRule
+			if len(body.Inject) > 0 {
+				_ = json.Unmarshal(body.Inject, &rule)
+			}
+			h.reg.Set(upstreams.Upstream{ID: body.ID, BaseURL: body.BaseURL, Inject: rule})
 		}
 		writeJSON(w, 201, u)
 	case "GET":
