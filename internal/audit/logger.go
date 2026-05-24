@@ -13,7 +13,8 @@ type Logger struct {
 	enc *json.Encoder
 }
 
-func New(w io.Writer) *Logger {
+func New(writers ...io.Writer) *Logger {
+	w := io.MultiWriter(writers...)
 	return &Logger{w: w, enc: json.NewEncoder(w)}
 }
 
