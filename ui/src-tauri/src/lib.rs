@@ -1,3 +1,11 @@
+mod error;
+mod types;
+mod socket;
+mod commands;
+mod audit;
+mod keychain;
+mod clipboard;
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
