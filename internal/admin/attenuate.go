@@ -20,6 +20,9 @@ func (h *Handlers) attenuate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(405)
 		return
 	}
+	// Note: attenuation accepts any data-plane bearer token, not just admin tokens.
+	// This is intentional: the admin unix socket is mode 0600 so only the OS owner
+	// can reach it; self-service attenuation by a parent is the design goal.
 	bearer := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 	if bearer == "" {
 		http.Error(w, "missing bearer", 401)

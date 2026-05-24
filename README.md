@@ -39,7 +39,7 @@ In a separate terminal:
 ./proxyd
 ```
 
-Listens on `http://127.0.0.1:8080` for agent traffic and exposes an admin socket at `/tmp/proxyd.sock` (mode 0600).
+Listens on `http://127.0.0.1:8080` for agent traffic and exposes an admin socket at `$HOME/.proxyd/admin.sock` (mode 0600).
 
 ### 3. Unlock the keystore
 
@@ -54,8 +54,8 @@ Prompts for the same passphrase. Decrypts the DEK and loads it into the running 
 The `parseInject` helper in proxyctl is currently a stub. Register upstreams directly against the admin socket:
 
 ```bash
-curl --unix-socket /tmp/proxyd.sock -s \
-  -X POST http://localhost/admin/upstreams \
+curl --unix-socket $HOME/.proxyd/admin.sock -s \
+  -X POST http://localhost/v1/upstreams \
   -H "Content-Type: application/json" \
   -d '{
     "id": "openai",
@@ -120,7 +120,7 @@ The proxy:
 
 ### Subtokens
 
-`pxy_*` tokens are 256-bit random strings. Only their BLAKE3 hash is stored. A stolen subtoken is bounded by TTL and the OPA policy attached at mint time.
+`pxy_*` tokens are 256-bit random strings. Only their SHA-256 hash is stored. A stolen subtoken is bounded by TTL and the OPA policy attached at mint time.
 
 ### Encryption at rest
 
@@ -136,7 +136,7 @@ Upstream API credentials are never written to the keystore. They are resolved li
 
 ### Admin surface
 
-The admin API is exposed only over a Unix domain socket (`/tmp/proxyd.sock`, mode 0600). Only the OS user who owns the socket can call it — no network exposure.
+The admin API is exposed only over a Unix domain socket (`$HOME/.proxyd/admin.sock`, mode 0600). Only the OS user who owns the socket can call it — no network exposure.
 
 ---
 
