@@ -14,7 +14,7 @@ func newRoot() *cobra.Command {
 	root := &cobra.Command{Use: "proxyctl"}
 	root.PersistentFlags().StringVar(&socketPath, "socket", os.ExpandEnv("$HOME/.proxyd/admin.sock"), "admin socket path")
 
-	root.AddCommand(cmdUnlock(), cmdLock(), cmdStatus(), cmdUpstream(), cmdPolicy(), cmdToken())
+	root.AddCommand(cmdBootstrap(), cmdUnlock(), cmdLock(), cmdStatus(), cmdUpstream(), cmdPolicy(), cmdToken())
 	return root
 }
 
