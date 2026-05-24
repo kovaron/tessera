@@ -7,14 +7,10 @@ mod socket;
 mod types;
 
 use commands::AppState;
-use tauri_specta::collect_commands;
 use tokio::sync::RwLock;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(debug_assertions)]
-    let _ = export_bindings();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
@@ -61,30 +57,4 @@ fn default_audit_log_path() -> std::path::PathBuf {
         .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
         .join(".proxyd")
         .join("audit.log")
-}
-
-#[cfg(debug_assertions)]
-fn export_bindings() -> Result<(), Box<dyn std::error::Error>> {
-    use specta_typescript::Typescript;
-    let builder = tauri_specta::Builder::<tauri::Wry>::new().commands(collect_commands![
-        commands::status::get_status,
-        commands::status::unlock,
-        commands::status::lock,
-        commands::upstreams::list_upstreams,
-        commands::upstreams::upsert_upstream,
-        commands::upstreams::delete_upstream,
-        commands::policies::create_policy,
-        commands::tokens::list_tokens,
-        commands::tokens::mint_token,
-        commands::tokens::revoke_token,
-        commands::tokens::attenuate_token,
-        commands::bootstrap::detect_state,
-        commands::bootstrap::run_bootstrap,
-        keychain::keychain_save,
-        keychain::keychain_load,
-        keychain::keychain_delete,
-        clipboard::clipboard_set_with_clear,
-    ]);
-    builder.export(Typescript::default(), "../src/types/bindings.ts")?;
-    Ok(())
 }
