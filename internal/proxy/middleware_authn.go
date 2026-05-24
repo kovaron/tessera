@@ -19,6 +19,10 @@ func TokenFromContext(ctx context.Context) (*store.Token, bool) {
 	return t, ok
 }
 
+func WithToken(ctx context.Context, t *store.Token) context.Context {
+	return context.WithValue(ctx, tokenKey, t)
+}
+
 func AuthnMiddleware(s store.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
