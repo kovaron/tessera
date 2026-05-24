@@ -1,3 +1,18 @@
 export default function NotRunningBanner() {
-  return <div className="p-6">proxyd not running (todo)</div>;
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="max-w-md space-y-2 text-center">
+        <h1 className="text-lg font-semibold">proxyd is not running</h1>
+        <p className="text-sm text-muted-foreground">
+          Start it from a terminal:
+        </p>
+        <code className="block bg-muted p-2 rounded text-xs">
+          proxyd &amp;
+        </code>
+        <p className="text-xs text-muted-foreground">
+          This window will reconnect automatically.
+        </p>
+      </div>
+    </div>
+  );
 }
