@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
-
 func main() {
-	fmt.Println("proxyctl stub")
+	if err := newRoot().Execute(); err != nil {
+		panic(err)
+	}
 }
