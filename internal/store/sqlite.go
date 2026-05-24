@@ -36,10 +36,3 @@ func (s *sqliteStore) UpdatePolicy(context.Context, PolicyRow) error          { 
 func (s *sqliteStore) DeletePolicy(context.Context, string) error             { panic("todo") }
 func (s *sqliteStore) ListPolicies(context.Context) ([]PolicyRow, error)      { panic("todo") }
 
-func (s *sqliteStore) UpsertUpstream(context.Context, Upstream) error         { panic("todo") }
-func (s *sqliteStore) GetUpstream(context.Context, string) (*Upstream, error) { panic("todo") }
-func (s *sqliteStore) ListUpstreams(context.Context) ([]Upstream, error)      { panic("todo") }
-func (s *sqliteStore) DeleteUpstream(context.Context, string) error           { panic("todo") }
-
-func (s *sqliteStore) GetKeystore(context.Context) (*Keystore, error) { panic("todo") }
-func (s *sqliteStore) PutKeystore(context.Context, Keystore) error    { panic("todo") }
