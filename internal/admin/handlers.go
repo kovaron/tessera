@@ -40,6 +40,10 @@ func NewHandlers(st *State) *Handlers {
 	h.mux.HandleFunc("/v1/status", h.status)
 	h.mux.HandleFunc("/v1/unlock", h.unlock)
 	h.mux.HandleFunc("/v1/lock", h.lock)
+	h.registerUpstreams()
+	h.registerPolicies()
+	h.registerMint()
+	h.registerRevoke()
 	return h
 }
 
