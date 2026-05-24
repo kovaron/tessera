@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -25,17 +26,30 @@ func (h *Handlers) tokensByID(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) revokeCascade(r *http.Request, id string) error {
 	now := time.Now()
-	if err := h.st.store.RevokeToken(r.Context(), id, now); err != nil {
-		return err
-	}
-	kids, err := h.st.store.ListChildren(r.Context(), id)
-	if err != nil {
-		return err
-	}
-	for _, k := range kids {
-		if err := h.revokeCascade(r, k.ID); err != nil {
-			return err
+	seen := make(map[string]bool)
+	queue := []string{id}
+	for depth := 0; len(queue) > 0; depth++ {
+		if depth > 16 {
+			return errors.New("revoke chain too deep")
 		}
+		var next []string
+		for _, cur := range queue {
+			if seen[cur] {
+				continue
+			}
+			seen[cur] = true
+			if err := h.st.store.RevokeToken(r.Context(), cur, now); err != nil {
+				return err
+			}
+			kids, err := h.st.store.ListChildren(r.Context(), cur)
+			if err != nil {
+				return err
+			}
+			for _, k := range kids {
+				next = append(next, k.ID)
+			}
+		}
+		queue = next
 	}
 	return nil
 }

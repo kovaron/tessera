@@ -28,7 +28,7 @@ func Resolve(ctx context.Context, s store.Store, plain string, now time.Time) (*
 	if t.RevokedAt != nil {
 		return nil, ErrRevoked
 	}
-	if t.ExpiresAt != nil && now.Unix() > *t.ExpiresAt {
+	if t.ExpiresAt != nil && now.Unix() >= *t.ExpiresAt {
 		return nil, ErrExpired
 	}
 	cur := t
@@ -46,7 +46,7 @@ func Resolve(ctx context.Context, s store.Store, plain string, now time.Time) (*
 		if p.RevokedAt != nil {
 			return nil, ErrParent
 		}
-		if p.ExpiresAt != nil && now.Unix() > *p.ExpiresAt {
+		if p.ExpiresAt != nil && now.Unix() >= *p.ExpiresAt {
 			return nil, ErrParent
 		}
 		cur = p

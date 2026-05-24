@@ -59,6 +59,21 @@ func bytesEqual(a, b []byte) bool {
 	return true
 }
 
+func TestExpiryAtBoundary(t *testing.T) {
+	ctx := context.Background()
+	s := mustOpenStore(t)
+	defer s.Close()
+
+	plain, hash, _ := Generate()
+	now := time.Now().Unix()
+	exp := now
+	s.InsertToken(ctx, store.Token{ID: "t", Hash: hash, Label: "x", PolicyID: "p", UpstreamID: "u", CreatedAt: now - 10, ExpiresAt: &exp})
+
+	if _, err := Resolve(ctx, s, plain, time.Unix(now, 0)); err == nil {
+		t.Fatal("expected expired at boundary")
+	}
+}
+
 func mustOpenStore(t *testing.T) store.Store {
 	t.Helper()
 	s, err := store.OpenSQLite(t.TempDir() + "/x.db")

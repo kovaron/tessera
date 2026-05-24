@@ -28,7 +28,7 @@ func (c *Cache) Get(ctx context.Context, ref string) (Secret, error) {
 		return e, nil
 	}
 	v, err, _ := c.sf.Do(ref, func() (any, error) {
-		sec, err := c.r.Resolve(ctx, ref)
+		sec, err := c.r.Resolve(context.WithoutCancel(ctx), ref)
 		if err != nil {
 			return Secret{}, err
 		}
