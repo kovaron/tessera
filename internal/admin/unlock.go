@@ -35,6 +35,13 @@ func (h *Handlers) unlock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) lock(w http.ResponseWriter, r *http.Request) {
+	if v := h.st.dek.Load(); v != nil {
+		if b, ok := v.([]byte); ok {
+			for i := range b {
+				b[i] = 0
+			}
+		}
+	}
 	h.st.key.Lock()
 	h.st.unlocked.Store(false)
 	h.st.dek.Store([]byte(nil))

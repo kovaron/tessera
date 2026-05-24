@@ -39,6 +39,10 @@ func (h *Handlers) attenuate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad json", 400)
 		return
 	}
+	if body.TTLSeconds <= 0 {
+		http.Error(w, "ttl_seconds must be > 0", 400)
+		return
+	}
 	if err := h.assertSubset(r, body.PolicyID, parent.PolicyID); err != nil {
 		http.Error(w, err.Error(), 403)
 		return
@@ -49,7 +53,11 @@ func (h *Handlers) attenuate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "child ttl exceeds parent", 400)
 		return
 	}
-	plain, hash, _ := authn.Generate()
+	plain, hash, err := authn.Generate()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 	parentID := parent.ID
 	var exp *int64
 	if body.TTLSeconds > 0 {
