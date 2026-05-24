@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -48,9 +49,9 @@ func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver, log *audit
 		director := func(req *http.Request) {
 			req.URL.Scheme = target.Scheme
 			req.URL.Host = target.Host
-			req.URL.Path = strings.TrimSuffix(target.Path, "/") + rest
+			req.URL.Path = path.Clean(strings.TrimSuffix(target.Path, "/") + rest)
 			req.Host = target.Host
-			Sanitize(req.Header)
+			Sanitize(req.Header) // authoritative strip; InjectMiddleware also strips upstream of here (defense in depth)
 			if err := upstreams.Apply(up.Inject, req, sec); err != nil {
 				req.Header.Set("X-Inject-Error", err.Error())
 			}

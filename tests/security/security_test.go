@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/kovaron/ai-secrets-manager/internal/audit"
@@ -41,11 +42,25 @@ func TestAuthHeaderStrippedToUpstream(t *testing.T) {
 }
 
 func TestPathTraversalRejected(t *testing.T) {
-	// ParseUpstreamPath splits at first slash — "../" in rest is OK at parse layer;
-	// the test asserts that the parsed id doesn't accidentally include `..` segments
-	id, rest, ok := proxy.ParseUpstreamPath("/u/foo/../bar/x")
-	if !ok || id != "foo" {
-		t.Fatalf("unexpected: id=%q ok=%v", id, ok)
+	var gotPath string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+	}))
+	defer upstream.Close()
+
+	reg := upstreams.NewRegistry()
+	reg.Set(upstreams.Upstream{ID: "u", BaseURL: upstream.URL, Inject: upstreams.InjectRule{Type: "bearer", SecretRef: "env://x"}})
+	rp := proxy.NewReverseProxy(reg, fakeSec{}, audit.New(io.Discard))
+
+	tok := &store.Token{ID: "t", UpstreamID: "u"}
+	req := httptest.NewRequest("GET", "/u/u/../admin", nil)
+	ctx := proxy.WithToken(req.Context(), tok)
+	rec := httptest.NewRecorder()
+	rp.ServeHTTP(rec, req.WithContext(ctx))
+
+	// Forwarded path must not contain ".." (Go's net/http resolves "/u/u/../admin" to "/admin" at parse time,
+	// and reverseproxy further sanitizes). We require absence of "..".
+	if strings.Contains(gotPath, "..") {
+		t.Fatalf("path traversal leaked upstream: %q", gotPath)
 	}
-	_ = rest
 }

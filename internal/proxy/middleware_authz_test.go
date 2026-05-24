@@ -2,10 +2,12 @@ package proxy
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/kovaron/ai-secrets-manager/internal/audit"
 	"github.com/kovaron/ai-secrets-manager/internal/authz"
 	"github.com/kovaron/ai-secrets-manager/internal/store"
 )
@@ -22,7 +24,7 @@ func (f fixedPolicySource) Get(_ context.Context, _ string) ([]byte, string, err
 }
 
 func TestAuthzAllowsGet(t *testing.T) {
-	mw := AuthzMiddleware(authz.NewOPA(), authz.NewCache(), fixedPolicySource{src: []byte(policySrc)})
+	mw := AuthzMiddleware(authz.NewOPA(), authz.NewCache(), fixedPolicySource{src: []byte(policySrc)}, audit.New(io.Discard))
 
 	tok := &store.Token{ID: "t", PolicyID: "p", UpstreamID: "u"}
 	req := httptest.NewRequest("GET", "/u/u/x", nil)
@@ -37,7 +39,7 @@ func TestAuthzAllowsGet(t *testing.T) {
 }
 
 func TestAuthzDeniesPost(t *testing.T) {
-	mw := AuthzMiddleware(authz.NewOPA(), authz.NewCache(), fixedPolicySource{src: []byte(policySrc)})
+	mw := AuthzMiddleware(authz.NewOPA(), authz.NewCache(), fixedPolicySource{src: []byte(policySrc)}, audit.New(io.Discard))
 	tok := &store.Token{ID: "t", PolicyID: "p", UpstreamID: "u"}
 	req := httptest.NewRequest("POST", "/u/u/x", nil)
 	ctx := context.WithValue(req.Context(), tokenKey, tok)

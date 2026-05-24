@@ -45,14 +45,21 @@ func (d *DataPlane) Handler() http.Handler {
 	rp := NewReverseProxy(d.Upstreams, d.Secrets, d.Audit)
 	chain := LockMiddleware(d.IsUnlocked)(
 		AuthnMiddleware(d.Store)(
-			AuthzMiddleware(d.Engine, d.PolicyCache, src)(
+			AuthzMiddleware(d.Engine, d.PolicyCache, src, d.Audit)(
 				InjectMiddleware(rp),
 			),
 		),
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/healthz" {
-			json.NewEncoder(w).Encode(map[string]any{"ok": true, "locked": !d.IsUnlocked()})
+			w.Header().Set("Content-Type", "application/json")
+			locked := !d.IsUnlocked()
+			if locked {
+				w.WriteHeader(503)
+			} else {
+				w.WriteHeader(200)
+			}
+			json.NewEncoder(w).Encode(map[string]any{"ok": !locked, "locked": locked})
 			return
 		}
 		chain.ServeHTTP(w, r)
