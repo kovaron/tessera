@@ -12,3 +12,9 @@ lint:
 
 clean:
 	rm -f proxyd proxyctl coverage.out
+
+.PHONY: sidecar
+sidecar:
+	mkdir -p ui/src-tauri/binaries
+	GOOS=darwin GOARCH=arm64 go build -o ui/src-tauri/binaries/proxyctl-aarch64-apple-darwin ./cmd/proxyctl
+	GOOS=darwin GOARCH=amd64 go build -o ui/src-tauri/binaries/proxyctl-x86_64-apple-darwin ./cmd/proxyctl
