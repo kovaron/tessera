@@ -19,5 +19,3 @@ func OpenSQLite(path string) (Store, error) {
 }
 
 func (s *sqliteStore) Close() error { return s.db.Close() }
-
-
