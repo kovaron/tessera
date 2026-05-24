@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"database/sql"
 
 	_ "modernc.org/sqlite"
@@ -21,9 +20,4 @@ func OpenSQLite(path string) (Store, error) {
 
 func (s *sqliteStore) Close() error { return s.db.Close() }
 
-func (s *sqliteStore) InsertPolicy(context.Context, PolicyRow) error          { panic("todo") }
-func (s *sqliteStore) GetPolicy(context.Context, string) (*PolicyRow, error)  { panic("todo") }
-func (s *sqliteStore) UpdatePolicy(context.Context, PolicyRow) error          { panic("todo") }
-func (s *sqliteStore) DeletePolicy(context.Context, string) error             { panic("todo") }
-func (s *sqliteStore) ListPolicies(context.Context) ([]PolicyRow, error)      { panic("todo") }
 
