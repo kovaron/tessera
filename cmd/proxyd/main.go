@@ -1,7 +1,82 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"flag"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/kovaron/ai-secrets-manager/internal/admin"
+	"github.com/kovaron/ai-secrets-manager/internal/audit"
+	"github.com/kovaron/ai-secrets-manager/internal/authz"
+	"github.com/kovaron/ai-secrets-manager/internal/crypto"
+	"github.com/kovaron/ai-secrets-manager/internal/proxy"
+	"github.com/kovaron/ai-secrets-manager/internal/secrets"
+	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
+)
 
 func main() {
-	fmt.Println("proxyd stub")
+	addr := flag.String("addr", "127.0.0.1:8080", "listen addr")
+	dbPath := flag.String("db", os.ExpandEnv("$HOME/.proxyd/data.db"), "sqlite path")
+	sockPath := flag.String("admin-socket", os.ExpandEnv("$HOME/.proxyd/admin.sock"), "admin socket")
+	flag.Parse()
+
+	s, err := store.OpenSQLite(*dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := s.Migrate(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+
+	kp := &crypto.PassphraseProvider{Params: crypto.DefaultArgon2()}
+	st := admin.NewState(s, kp)
+	adminH := admin.NewHandlers(st)
+	sock := &admin.SocketServer{Path: *sockPath, H: adminH}
+	if err := sock.Start(); err != nil {
+		log.Fatal(err)
+	}
+	defer sock.Stop(context.Background())
+
+	reg := upstreams.NewRegistry()
+	if err := reg.HydrateFromStore(context.Background(), s); err != nil {
+		log.Fatal(err)
+	}
+
+	secReg := secrets.NewRegistry()
+	secReg.Register(secrets.NewEnvProvider())
+	secReg.Register(secrets.NewOnePasswordProvider(nil))
+	secReg.Register(secrets.NewDopplerProvider(nil))
+	cache := secrets.NewCache(secReg, 5*time.Minute)
+
+	dp := &proxy.DataPlane{
+		Store:       s,
+		Engine:      authz.NewOPA(),
+		PolicyCache: authz.NewCache(),
+		Upstreams:   reg,
+		Secrets:     secrets.ByteResolver{Cache: cache},
+		Audit:       audit.New(os.Stdout),
+		IsUnlocked:  st.Unlocked,
+		DEK:         st.DEK,
+	}
+
+	srv := &http.Server{Addr: *addr, Handler: dp.Handler()}
+	go func() {
+		log.Printf("proxyd listening on %s", *addr)
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	srv.Shutdown(ctx)
 }
