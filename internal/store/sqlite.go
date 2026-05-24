@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -21,14 +20,6 @@ func OpenSQLite(path string) (Store, error) {
 }
 
 func (s *sqliteStore) Close() error { return s.db.Close() }
-
-// Panic stubs — replaced in later tasks.
-func (s *sqliteStore) InsertToken(context.Context, Token) error                  { panic("todo") }
-func (s *sqliteStore) LookupTokenByHash(context.Context, []byte) (*Token, error) { panic("todo") }
-func (s *sqliteStore) GetToken(context.Context, string) (*Token, error)          { panic("todo") }
-func (s *sqliteStore) ListTokens(context.Context) ([]Token, error)               { panic("todo") }
-func (s *sqliteStore) RevokeToken(context.Context, string, time.Time) error      { panic("todo") }
-func (s *sqliteStore) ListChildren(context.Context, string) ([]Token, error)     { panic("todo") }
 
 func (s *sqliteStore) InsertPolicy(context.Context, PolicyRow) error          { panic("todo") }
 func (s *sqliteStore) GetPolicy(context.Context, string) (*PolicyRow, error)  { panic("todo") }
