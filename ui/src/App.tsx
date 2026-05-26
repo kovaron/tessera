@@ -16,8 +16,10 @@ export default function App() {
   }, []);
 
   if (!detect) return null;
-  if (!detect.db_exists) return <BootstrapWizard onDone={() => api.detectState().then(setDetect)} />;
   if (status.isError || !detect.socket_exists) return <NotRunningBanner />;
+  if (!detect.db_exists || status.data?.initialized === false) {
+    return <BootstrapWizard onDone={() => api.detectState().then(setDetect)} />;
+  }
   if (status.data?.locked) return <Unlock />;
 
   return (

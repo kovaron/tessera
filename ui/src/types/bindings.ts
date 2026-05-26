@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 // ============== Types ==============
 
-export type Status = { locked: boolean; version: string };
+export type Status = { locked: boolean; version: string; initialized: boolean };
 
 export type Upstream = {
   ID: string;

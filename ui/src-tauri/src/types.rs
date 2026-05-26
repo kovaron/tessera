@@ -5,6 +5,8 @@ use specta::Type;
 pub struct Status {
     pub locked: bool,
     pub version: String,
+    #[serde(default)]
+    pub initialized: bool,
 }
 
 #[derive(Serialize, Deserialize, Type, Debug, Clone)]

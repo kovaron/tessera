@@ -60,9 +60,11 @@ func NewHandlersWithRegistry(st *State, reg *upstreams.Registry) *Handlers {
 func (h *Handlers) ServeHTTP(w http.ResponseWriter, r *http.Request) { h.mux.ServeHTTP(w, r) }
 
 func (h *Handlers) status(w http.ResponseWriter, r *http.Request) {
+	k, _ := h.st.store.GetKeystore(r.Context())
 	writeJSON(w, 200, map[string]any{
-		"locked":  !h.st.Unlocked(),
-		"version": "dev",
+		"locked":      !h.st.Unlocked(),
+		"version":     "dev",
+		"initialized": k != nil,
 	})
 }
 
