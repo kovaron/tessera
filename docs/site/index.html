@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tessera — short-lived API keys for AI agents</title>
 <meta name="description" content="Local-first auth proxy that hands AI agents opaque scoped subtokens and swaps them for real upstream credentials at request time. Policy-gated, instantly revocable.">
+<link rel="icon" type="image/png" href="assets/logo.png">
 <style>
   :root {
     --bg:#0b0d12;
@@ -24,7 +25,8 @@
   a:hover { color:#bae6fd; }
   .container { max-width: 1080px; margin:0 auto; padding: 0 24px; }
   header { padding: 28px 0; display:flex; justify-content:space-between; align-items:center; }
-  header .brand { font-weight:700; letter-spacing:-.01em; }
+  header .brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.01em; }
+  header .brand img { width:28px; height:28px; border-radius:6px; }
   header nav a { margin-left:18px; color:var(--muted); font-size:14px; }
   header nav a:hover { color:var(--fg); }
 
@@ -117,7 +119,7 @@
 <body>
   <div class="container">
     <header>
-      <div class="brand">Tessera</div>
+      <div class="brand"><img src="assets/logo.png" alt=""> Tessera</div>
       <nav>
         <a href="#how">How it works</a>
         <a href="#quickstart">Quick start</a>
@@ -126,6 +128,7 @@
     </header>
 
     <section class="hero" style="border-top:0; padding-top: 24px;">
+      <img src="assets/logo.png" alt="" style="width:96px;height:96px;border-radius:16px;display:block;margin-bottom:24px;filter:drop-shadow(0 0 24px rgba(125,211,252,.25));">
       <h1>Short-lived, <span>policy-gated</span> API keys for AI agents.</h1>
       <p>
         Tessera hands your AI agents an opaque, scoped subtoken — and swaps it for a real upstream API credential

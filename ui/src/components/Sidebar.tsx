@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import StatusBadge from "./StatusBadge";
+import logo from "@/assets/logo.png";
 
 const items = [
   { to: "/", label: "Dashboard" },
@@ -12,9 +13,13 @@ const items = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-56 border-r p-4 flex flex-col gap-2">
+    <aside className="w-56 border-r p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-2 mb-1">
+        <img src={logo} alt="" className="w-7 h-7 rounded-md" />
+        <span className="font-semibold tracking-tight">Tessera</span>
+      </div>
       <StatusBadge />
-      <nav className="mt-4 flex flex-col gap-1">
+      <nav className="mt-2 flex flex-col gap-1">
         {items.map((it) => (
           <NavLink
             key={it.to}

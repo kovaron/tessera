@@ -1,8 +1,30 @@
-# Tessera
+<p align="center">
+  <img src="docs/site/assets/logo.png" alt="Tessera" width="180" />
+</p>
 
-Short-lived, policy-gated API keys for AI agents. Local-first.
+<h1 align="center">Tessera</h1>
+
+<p align="center">
+  Short-lived, policy-gated API keys for AI agents. Local-first.
+</p>
 
 Tessera hands your AI agents an opaque, scoped subtoken (`pxy_*`) and swaps it for a real upstream API credential at request time. Live OPA policy evaluation, live secret resolution from 1Password / Doppler / env, instant revocation. No SaaS. No cloud. Your machine.
+
+---
+
+## The name
+
+**Tessera** (plural _tesserae_) is the Latin word for a small mosaic tile.
+
+In ancient Rome it was also the name for a token — a clay or bone tile bearing a mark or password that granted its bearer admission, hospitality, or a specific privilege. A _tessera hospitalis_ let a guest claim safe passage; a _tessera militaris_ relayed orders down a chain of command.
+
+That maps cleanly to what this tool does:
+
+- It mints **small, opaque tokens** scoped to a single upstream and bounded by a policy.
+- Each token is **one piece of a larger picture** — the mosaic — composed by you, the admin, out of upstreams + policies + parent attenuations.
+- The token itself is meaningless to anyone but the proxy; presenting it is what grants passage.
+
+The hexagonal tile in the logo is a single tessera; the dimmer neighbours hint at the rest of the mosaic.
 
 ---
 

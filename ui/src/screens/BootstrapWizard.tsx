@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import logo from "@/assets/logo.png";
 
 interface Props { onDone: () => void; }
 
@@ -31,6 +32,7 @@ export default function BootstrapWizard({ onDone }: Props) {
   return (
     <div className="flex h-screen items-center justify-center p-6">
       <div className="max-w-md w-full space-y-4">
+        <img src={logo} alt="" className="w-20 h-20 rounded-2xl mx-auto" />
         {step === "welcome" && (
           <>
             <h1 className="text-xl font-semibold">Welcome to Tessera</h1>
