@@ -1,8 +1,7 @@
 use crate::error::AppError;
 use std::path::PathBuf;
-use std::process::Stdio;
+use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
-use tokio::io::AsyncWriteExt;
 
 #[derive(serde::Serialize, specta::Type)]
 pub struct DetectResult {
@@ -43,22 +42,34 @@ pub async fn run_bootstrap(
         .shell()
         .sidecar("proxyctl")
         .map_err(|e| AppError::Http(e.to_string()))?;
-    let mut child = sidecar
+    let (mut rx, mut child) = sidecar
         .args(["bootstrap", "--db", &db])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| AppError::Http(e.to_string()))?;
-    if let Some(mut stdin) = child.stdin.take() {
-        let payload = format!("{0}\n{0}\n", passphrase);
-        stdin.write_all(payload.as_bytes()).await?;
+
+    let payload = format!("{0}\n{0}\n", passphrase);
+    child
+        .write(payload.as_bytes())
+        .map_err(|e| AppError::Http(e.to_string()))?;
+
+    let mut stderr = Vec::new();
+    let mut exit_code: Option<i32> = None;
+    while let Some(event) = rx.recv().await {
+        match event {
+            CommandEvent::Stderr(bytes) => stderr.extend_from_slice(&bytes),
+            CommandEvent::Terminated(payload) => {
+                exit_code = payload.code;
+                break;
+            }
+            _ => {}
+        }
     }
-    let out = child.wait_with_output().await?;
-    if !out.status.success() {
+
+    if exit_code != Some(0) {
         return Err(AppError::Http(format!(
-            "proxyctl bootstrap failed: {}",
-            String::from_utf8_lossy(&out.stderr)
+            "proxyctl bootstrap failed (exit {:?}): {}",
+            exit_code,
+            String::from_utf8_lossy(&stderr)
         )));
     }
     Ok(())
