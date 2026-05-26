@@ -16,7 +16,7 @@ pub struct Upstream {
     #[serde(rename = "BaseURL")]
     pub base_url: String,
     #[serde(rename = "InjectJSON")]
-    pub inject_json: Vec<u8>,
+    pub inject_json: serde_json::Value,
     #[serde(rename = "CreatedAt")]
     pub created_at: i64,
 }

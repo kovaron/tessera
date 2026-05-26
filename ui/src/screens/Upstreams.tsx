@@ -10,7 +10,8 @@ import type { InjectRule, UpsertUpstreamReq } from "@/types/bindings";
 const emptyInject: InjectRule = { type: "bearer", secret_ref: "" };
 
 export default function Upstreams() {
-  const { data = [] } = useUpstreams();
+  const upstreams = useUpstreams();
+  const data = upstreams.data ?? [];
   const upsert = useUpsertUpstream();
   const del = useDeleteUpstream();
   const [editing, setEditing] = useState<UpsertUpstreamReq | null>(null);
@@ -30,12 +31,21 @@ export default function Upstreams() {
                 <div><Label>ID</Label><Input value={editing.id} onChange={(e) => setEditing({ ...editing, id: e.target.value })} /></div>
                 <div><Label>Base URL</Label><Input value={editing.base_url} onChange={(e) => setEditing({ ...editing, base_url: e.target.value })} /></div>
                 <InjectRuleBuilder value={editing.inject} onChange={(inject) => setEditing({ ...editing, inject })} />
-                <Button onClick={() => upsert.mutate(editing, { onSuccess: () => setEditing(null) })}>Save</Button>
+                <Button disabled={upsert.isPending} onClick={() => upsert.mutate(editing, { onSuccess: () => setEditing(null) })}>
+                  {upsert.isPending ? "Saving…" : "Save"}
+                </Button>
+                {upsert.isError && (
+                  <p className="text-xs text-red-500 break-all">save failed: {String(upsert.error)}</p>
+                )}
               </div>
             </SheetContent>
           )}
         </Sheet>
       </div>
+      {upstreams.isError && (
+        <p className="text-xs text-red-500">list failed: {String(upstreams.error)}</p>
+      )}
+      <p className="text-xs text-muted-foreground">{data.length} upstream(s)</p>
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-muted-foreground"><th>ID</th><th>Base URL</th><th>Inject</th><th></th></tr>
@@ -45,7 +55,7 @@ export default function Upstreams() {
             <tr key={u.ID} className="border-t">
               <td className="py-2">{u.ID}</td>
               <td>{u.BaseURL}</td>
-              <td><code className="text-xs">{new TextDecoder().decode(new Uint8Array(u.InjectJSON))}</code></td>
+              <td><code className="text-xs">{JSON.stringify(u.InjectJSON)}</code></td>
               <td><Button size="sm" variant="ghost" onClick={() => del.mutate(u.ID)}>Delete</Button></td>
             </tr>
           ))}

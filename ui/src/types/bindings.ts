@@ -7,7 +7,7 @@ export type Status = { locked: boolean; version: string; initialized: boolean };
 export type Upstream = {
   ID: string;
   BaseURL: string;
-  InjectJSON: number[];
+  InjectJSON: unknown;
   CreatedAt: number;
 };
 

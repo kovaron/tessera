@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -57,7 +58,7 @@ type PolicyRow struct {
 type Upstream struct {
 	ID         string
 	BaseURL    string
-	InjectJSON []byte
+	InjectJSON json.RawMessage
 	CreatedAt  int64
 }
 
