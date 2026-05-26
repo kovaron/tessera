@@ -9,7 +9,7 @@ pub struct Status {
     pub initialized: bool,
 }
 
-#[derive(Serialize, Deserialize, Type, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Upstream {
     #[serde(rename = "ID")]
     pub id: String,
