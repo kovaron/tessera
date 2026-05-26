@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>proxyd — short-lived API keys for AI agents</title>
+<meta name="description" content="Local-first auth proxy that hands AI agents opaque scoped subtokens and swaps them for real upstream credentials at request time. Policy-gated, instantly revocable.">
+<style>
+  :root {
+    --bg:#0b0d12;
+    --bg-2:#11141b;
+    --fg:#e7ecf3;
+    --muted:#8a94a6;
+    --line:#1e2330;
+    --accent:#7dd3fc;
+    --accent-2:#a78bfa;
+    --good:#34d399;
+    --bad:#f87171;
+    --shadow:0 1px 0 rgba(255,255,255,.04) inset;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; padding:0; background:var(--bg); color:var(--fg); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { color:#bae6fd; }
+  .container { max-width: 1080px; margin:0 auto; padding: 0 24px; }
+  header { padding: 28px 0; display:flex; justify-content:space-between; align-items:center; }
+  header .brand { font-weight:700; letter-spacing:-.01em; }
+  header nav a { margin-left:18px; color:var(--muted); font-size:14px; }
+  header nav a:hover { color:var(--fg); }
+
+  .hero { padding: 56px 0 72px; }
+  .hero h1 { font-size: clamp(40px, 6vw, 64px); line-height:1.05; letter-spacing:-.025em; margin:0 0 18px; }
+  .hero h1 span { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero p { font-size: 18px; color: var(--muted); max-width: 720px; margin: 0 0 28px; }
+  .hero .cta { display:flex; gap:12px; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding: 10px 16px; border-radius: 10px; font-weight:600; font-size:14px; border:1px solid var(--line); color:var(--fg); background: var(--bg-2); box-shadow: var(--shadow); transition: transform .12s ease, border-color .12s ease; }
+  .btn:hover { transform: translateY(-1px); border-color:#2a3142; }
+  .btn.primary { background: linear-gradient(180deg, #1a2030, #131826); border-color:#2c3650; }
+  .btn .gh { width:18px; height:18px; }
+
+  section { padding: 56px 0; border-top: 1px solid var(--line); }
+  section h2 { font-size: 28px; letter-spacing:-.02em; margin: 0 0 12px; }
+  section p.lead { color: var(--muted); max-width: 760px; margin: 0 0 32px; }
+
+  .grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 800px) {
+    .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  }
+  .card { background: var(--bg-2); border:1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .card h3 { margin: 0 0 8px; font-size: 16px; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+  .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background: rgba(125,211,252,.1); color: var(--accent); font-size: 11px; letter-spacing:.04em; text-transform:uppercase; margin-bottom:10px; }
+
+  pre { background:#0a0c11; border:1px solid var(--line); border-radius:12px; padding:16px; overflow:auto; font: 13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  code { font: 13px ui-monospace,SFMono-Regular,Menlo,monospace; }
+
+  .diagram { background: var(--bg-2); border:1px solid var(--line); border-radius: 16px; padding: 24px; }
+  .diagram svg { width: 100%; height: auto; display:block; }
+  .legend { display:flex; gap:18px; flex-wrap:wrap; margin-top: 16px; font-size: 13px; color: var(--muted); }
+  .legend .k { display:inline-flex; align-items:center; gap:8px; }
+  .legend .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+
+  /* SVG animation */
+  .flow-dot {
+    fill: var(--accent);
+    filter: drop-shadow(0 0 6px rgba(125,211,252,.7));
+  }
+  .subtoken-dot { animation: travel-subtoken 5s ease-in-out infinite; }
+  .secret-dot   { animation: travel-secret   5s ease-in-out infinite; }
+  .upstream-dot { animation: travel-upstream 5s ease-in-out infinite; }
+  .response-dot { animation: travel-response 5s ease-in-out infinite; }
+
+  @keyframes travel-subtoken {
+    0%   { transform: translate(60px, 200px); opacity: 0; }
+    5%   { opacity: 1; }
+    25%  { transform: translate(310px, 200px); opacity: 1; }
+    100% { transform: translate(310px, 200px); opacity: 0; }
+  }
+  @keyframes travel-secret {
+    0%, 25%  { transform: translate(440px, 200px); opacity: 0; }
+    30%  { opacity: 1; }
+    45%  { transform: translate(720px, 200px); opacity: 1; }
+    55%  { transform: translate(440px, 200px); opacity: 1; }
+    100% { transform: translate(440px, 200px); opacity: 0; }
+  }
+  @keyframes travel-upstream {
+    0%, 55%  { transform: translate(440px, 200px); opacity: 0; }
+    60%  { opacity: 1; }
+    80%  { transform: translate(900px, 200px); opacity: 1; }
+    100% { transform: translate(900px, 200px); opacity: 0; }
+  }
+  @keyframes travel-response {
+    0%, 80% { transform: translate(900px, 240px); opacity: 0; }
+    82% { opacity: 1; }
+    98% { transform: translate(60px, 240px); opacity: 1; }
+    100% { transform: translate(60px, 240px); opacity: 0; }
+  }
+
+  .guard {
+    fill: rgba(248,113,113,.0);
+    stroke: var(--bad);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+    animation: guard-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes guard-pulse {
+    0%, 100% { stroke-opacity: 0.35; }
+    50%      { stroke-opacity: 1; }
+  }
+
+  footer { padding: 36px 0 80px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--muted); border-bottom: 1px dashed #2c3242; }
+  footer a:hover { color: var(--fg); }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">proxyd</div>
+      <nav>
+        <a href="#how">How it works</a>
+        <a href="#quickstart">Quick start</a>
+        <a href="https://github.com/kovaron/ai-secrets-manager">GitHub</a>
+      </nav>
+    </header>
+
+    <section class="hero" style="border-top:0; padding-top: 24px;">
+      <h1>Short-lived, <span>policy-gated</span> API keys for AI agents.</h1>
+      <p>
+        proxyd hands your AI agents an opaque, scoped subtoken — and swaps it for a real upstream API credential
+        at request time. Live OPA policy, live secret resolution from 1Password / Doppler / Vault, instant revocation.
+        Local-first. macOS-native admin UI.
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/kovaron/ai-secrets-manager">
+          <svg class="gh" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .2a8 8 0 0 0-2.5 15.6c.4.1.5-.2.5-.4v-1.4c-2.2.5-2.7-1-2.7-1-.4-1-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 2 .9 2.5.7.1-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1 0-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.6 7.6 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.1 1.9 0 2.1.5.5.8 1.2.8 2.1 0 3.1-1.9 3.7-3.6 4 .3.2.5.7.5 1.4v2c0 .2.2.5.5.4A8 8 0 0 0 8 .2z"/></svg>
+          View on GitHub
+        </a>
+        <a class="btn" href="#how">See how it works ↓</a>
+      </div>
+    </section>
+
+    <section id="how">
+      <span class="pill">data flow</span>
+      <h2>Where the secrets live, and where they don't.</h2>
+      <p class="lead">
+        Agents never see real upstream credentials. The subtoken they carry is meaningless outside the proxy.
+        Below: a request from agent to upstream, with every guard in red.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 1000 320" aria-label="proxyd data flow diagram">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#3a4358" />
+            </marker>
+            <linearGradient id="boxBg" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#1a2030"/>
+              <stop offset="100%" stop-color="#131826"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Agent -->
+          <g transform="translate(20, 160)">
+            <rect width="120" height="80" rx="14" fill="url(#boxBg)" stroke="#2a3142"/>
+            <text x="60" y="34" text-anchor="middle" fill="#e7ecf3" font-size="14" font-weight="600">AI Agent</text>
+            <text x="60" y="56" text-anchor="middle" fill="#8a94a6" font-size="12">holds pxy_… subtoken</text>
+          </g>
+
+          <!-- proxyd -->
+          <g transform="translate(270, 130)">
+            <rect width="200" height="140" rx="16" fill="url(#boxBg)" stroke="#2c3650"/>
+            <text x="100" y="30" text-anchor="middle" fill="#e7ecf3" font-size="14" font-weight="700">proxyd</text>
+            <text x="100" y="55" text-anchor="middle" fill="#8a94a6" font-size="11">authn → authz → inject</text>
+            <text x="100" y="82" text-anchor="middle" fill="#7dd3fc" font-size="11">▸ subtoken → store hash lookup</text>
+            <text x="100" y="100" text-anchor="middle" fill="#7dd3fc" font-size="11">▸ OPA policy gate</text>
+            <text x="100" y="118" text-anchor="middle" fill="#7dd3fc" font-size="11">▸ strip Authorization/Cookie</text>
+          </g>
+
+          <!-- guard around proxyd -->
+          <rect class="guard" x="260" y="120" width="220" height="160" rx="20" />
+          <text x="370" y="296" text-anchor="middle" fill="#f87171" font-size="11" font-weight="600">policy + lock + audit</text>
+
+          <!-- Secrets -->
+          <g transform="translate(600, 130)">
+            <rect width="180" height="140" rx="16" fill="url(#boxBg)" stroke="#2c3650"/>
+            <text x="90" y="30" text-anchor="middle" fill="#e7ecf3" font-size="14" font-weight="700">Secret store</text>
+            <text x="90" y="55" text-anchor="middle" fill="#8a94a6" font-size="11">1Password · Doppler · Vault</text>
+            <text x="90" y="86" text-anchor="middle" fill="#a78bfa" font-size="11">resolved live, TTL-cached</text>
+            <text x="90" y="106" text-anchor="middle" fill="#a78bfa" font-size="11">never persisted by proxy</text>
+          </g>
+
+          <!-- Upstream -->
+          <g transform="translate(840, 160)">
+            <rect width="140" height="80" rx="14" fill="url(#boxBg)" stroke="#2a3142"/>
+            <text x="70" y="34" text-anchor="middle" fill="#e7ecf3" font-size="14" font-weight="600">Upstream API</text>
+            <text x="70" y="56" text-anchor="middle" fill="#8a94a6" font-size="12">sees real credential</text>
+          </g>
+
+          <!-- Lines -->
+          <path d="M140 200 L270 200" stroke="#3a4358" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M470 200 L600 200" stroke="#3a4358" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M780 200 L840 200" stroke="#3a4358" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Return path -->
+          <path d="M840 240 L140 240" stroke="#2a3142" stroke-width="1.5" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+
+          <!-- Animated traveling dots -->
+          <circle class="flow-dot subtoken-dot" cx="0" cy="0" r="5"/>
+          <circle class="flow-dot secret-dot"   cx="0" cy="0" r="5" style="fill: var(--accent-2);"/>
+          <circle class="flow-dot upstream-dot" cx="0" cy="0" r="5" style="fill: var(--good);"/>
+          <circle class="flow-dot response-dot" cx="0" cy="0" r="4" style="fill: #94a3b8;"/>
+        </svg>
+
+        <div class="legend">
+          <span class="k"><span class="dot" style="background:var(--accent)"></span>opaque subtoken (in)</span>
+          <span class="k"><span class="dot" style="background:var(--accent-2)"></span>secret fetch (out & back)</span>
+          <span class="k"><span class="dot" style="background:var(--good)"></span>real credential → upstream</span>
+          <span class="k"><span class="dot" style="background:#94a3b8"></span>response back to agent</span>
+          <span class="k"><span class="dot" style="background:var(--bad)"></span>guards (policy / lock / audit)</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="guards">
+      <span class="pill">defense in depth</span>
+      <h2>Where the guards are.</h2>
+      <p class="lead">Every request crosses three checkpoints before a real credential is even resolved.</p>
+      <div class="grid-3">
+        <div class="card">
+          <h3>1. Subtoken validation</h3>
+          <p>Plaintext token is SHA-256'd and looked up. Constant-time compare. Parent chain walked — if any ancestor is revoked, request fails fast.</p>
+        </div>
+        <div class="card">
+          <h3>2. OPA policy</h3>
+          <p>Rego policy compiles once, evaluates per request. Decides on method, path, query, token label, parent chain. Encrypted at rest with the DEK.</p>
+        </div>
+        <div class="card">
+          <h3>3. Header sanitization</h3>
+          <p>Inbound Authorization / Cookie / Proxy-Authorization stripped before the reverse proxy runs. Real credential injected by the Director only.</p>
+        </div>
+        <div class="card">
+          <h3>Lock middleware</h3>
+          <p>If the DEK isn't loaded (proxyd locked), every data-plane request returns 503 immediately. No accidental exposure during a restart.</p>
+        </div>
+        <div class="card">
+          <h3>Audit log</h3>
+          <p>Every request — allow or deny — appends a JSON event with token id, decision, reason, latency. File-rotated. Streamed live to the desktop UI.</p>
+        </div>
+        <div class="card">
+          <h3>Admin via unix socket</h3>
+          <p>Admin API is mode 0600 — only the OS user reaches it. macOS desktop app + Keychain integration for the bootstrap passphrase.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="quickstart">
+      <span class="pill">quickstart</span>
+      <h2>From zero to first proxied call.</h2>
+      <p class="lead">Four commands. Real upstream creds stay in your password manager; the agent only ever sees a <code>pxy_…</code> token.</p>
+
+      <div class="grid-2">
+        <div>
+          <pre><code># 1. Build
+make build
+
+# 2. Bootstrap keystore (one time)
+./proxyctl bootstrap
+
+# 3. Start the proxy
+UPSTREAM_TOKEN=ghp_real_secret ./proxyd &
+
+# 4. Unlock + mint a token via the macOS UI
+#    (or proxyctl unlock + token mint)</code></pre>
+        </div>
+        <div>
+          <pre><code># 5. Hit the proxy as your AI agent would
+curl -H "Authorization: Bearer pxy_…" \
+     http://127.0.0.1:8080/u/github/repos/acme/widgets/issues
+
+# proxyd swaps pxy_… for ghp_real_secret
+# OPA policy gates the call
+# audit event lands in ~/.proxyd/audit.log</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <span class="pill">why</span>
+      <h2>Why this, not raw API keys.</h2>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Instant revocation</h3>
+          <p>Cascade-revoke a parent token and every child it minted is dead the next request. No API-side key rotation needed.</p>
+        </div>
+        <div class="card">
+          <h3>Narrow attenuation</h3>
+          <p>A parent token can mint a child with a strict subset policy + shorter TTL. Hand the child to one agent for one task.</p>
+        </div>
+        <div class="card">
+          <h3>Per-call policy</h3>
+          <p>Authz runs every request. Path globs, method allowlists, request-shape conditions — all in Rego.</p>
+        </div>
+        <div class="card">
+          <h3>Encrypted at rest</h3>
+          <p>SQLite. Policies AEAD-encrypted with XChaCha20-Poly1305 under a DEK that's only unwrapped by passphrase at runtime.</p>
+        </div>
+        <div class="card">
+          <h3>Provider-agnostic secrets</h3>
+          <p>1Password, Doppler, Vault, plain env — all resolved live, TTL-cached, single-flighted. No upstream key ever hits disk.</p>
+        </div>
+        <div class="card">
+          <h3>Single binary</h3>
+          <p>Go server + Go CLI + Tauri macOS UI. ~15 MB binaries. No SaaS. No cloud. Localhost or your own box.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>
+        Built by <a href="https://github.com/kovaron">@kovaron</a> ·
+        Source on <a href="https://github.com/kovaron/ai-secrets-manager">GitHub</a> ·
+        MIT licensed
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
