@@ -1,6 +1,7 @@
 import Editor from "@monaco-editor/react";
 import { useMemo } from "react";
 import { quickValidate } from "@/lib/rego-compile";
+import { useIsDark } from "@/lib/use-color-scheme";
 
 interface Props {
   value: string;
@@ -9,14 +10,16 @@ interface Props {
 
 export default function RegoEditor({ value, onChange }: Props) {
   const v = useMemo(() => quickValidate(value), [value]);
+  const isDark = useIsDark();
   return (
     <div className="flex h-[60vh] gap-4">
-      <div className="flex-1 border rounded">
+      <div className="flex-1 border rounded overflow-hidden">
         <Editor
           height="100%"
           defaultLanguage="ruby"
           value={value}
           onChange={(v) => onChange(v ?? "")}
+          theme={isDark ? "vs-dark" : "vs"}
           options={{ minimap: { enabled: false }, fontSize: 13 }}
         />
       </div>
