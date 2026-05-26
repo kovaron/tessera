@@ -124,10 +124,10 @@ export default function Upstreams() {
       <div className="rounded-md border overflow-hidden">
         <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
           <colgroup>
-            <col style={{ width: "18%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "32%" }} />
             <col style={{ width: "34%" }} />
-            <col style={{ width: "36%" }} />
-            <col style={{ width: "12%" }} />
+            <col style={{ width: "20%", minWidth: "180px" }} />
           </colgroup>
           <thead className="bg-muted/40">
             <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -150,9 +150,11 @@ export default function Upstreams() {
                 <td className="px-3 py-2 font-mono text-xs truncate" title={u.ID}>{u.ID}</td>
                 <td className="px-3 py-2 font-mono text-xs truncate" title={u.BaseURL}>{u.BaseURL}</td>
                 <td className="px-3 py-2"><InjectCell raw={u.InjectJSON} /></td>
-                <td className="px-3 py-2 text-right whitespace-nowrap">
-                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => openEdit(u)}>Edit</Button>{" "}
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-red-500 hover:text-red-400" onClick={() => del.mutate(u.ID)}>Delete</Button>
+                <td className="px-3 py-2">
+                  <div className="flex justify-end gap-2 whitespace-nowrap">
+                    <Button size="sm" variant="outline" className="h-7 px-3" onClick={() => openEdit(u)}>Edit</Button>
+                    <Button size="sm" variant="outline" className="h-7 px-3 border-red-500/30 text-red-500 hover:bg-red-500/10" onClick={() => del.mutate(u.ID)}>Delete</Button>
+                  </div>
                 </td>
               </tr>
             ))}
