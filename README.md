@@ -8,6 +8,13 @@
   Short-lived, policy-gated API keys for AI agents. Local-first.
 </p>
 
+<p align="center">
+  <a href="https://github.com/kovaron/ai-secrets-manager/actions"><img src="https://img.shields.io/github/actions/workflow/status/kovaron/ai-secrets-manager/ui.yml?label=ci&style=flat-square" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="MIT License"></a>
+  <a href="https://golang.org"><img src="https://img.shields.io/badge/go-1.22%2B-00ADD8?style=flat-square" alt="Go 1.22+"></a>
+  <a href="https://github.com/kovaron/ai-secrets-manager/releases"><img src="https://img.shields.io/github/v/tag/kovaron/ai-secrets-manager?label=release&style=flat-square" alt="Latest tag"></a>
+</p>
+
 Tessera hands your AI agents an opaque, scoped subtoken (`pxy_*`) and swaps it for a real upstream API credential at request time. Live OPA policy evaluation, live secret resolution from 1Password / Doppler / env, instant revocation. No SaaS. No cloud. Your machine.
 
 ---
