@@ -5,7 +5,10 @@ export function useStatus() {
   return useQuery({
     queryKey: ["status"],
     queryFn: () => api.getStatus(),
-    refetchInterval: 3000,
+    refetchInterval: 2000,
+    refetchIntervalInBackground: true,
+    retry: false,
+    gcTime: 0,
   });
 }
 

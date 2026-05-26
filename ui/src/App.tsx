@@ -12,11 +12,15 @@ export default function App() {
   const status = useStatus();
 
   useEffect(() => {
-    api.detectState().then(setDetect);
+    const tick = () => api.detectState().then(setDetect);
+    tick();
+    const id = setInterval(tick, 2000);
+    return () => clearInterval(id);
   }, []);
 
   if (!detect) return null;
-  if (status.isError || !detect.socket_exists) return <NotRunningBanner />;
+  // proxyd reachable if status fetched successfully recently
+  if (!status.data && (status.isError || !detect.socket_exists)) return <NotRunningBanner />;
   if (!detect.db_exists || status.data?.initialized === false) {
     return <BootstrapWizard onDone={() => api.detectState().then(setDetect)} />;
   }
