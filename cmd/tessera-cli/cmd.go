@@ -11,8 +11,8 @@ import (
 var socketPath string
 
 func newRoot() *cobra.Command {
-	root := &cobra.Command{Use: "proxyctl"}
-	root.PersistentFlags().StringVar(&socketPath, "socket", os.ExpandEnv("$HOME/.proxyd/admin.sock"), "admin socket path")
+	root := &cobra.Command{Use: "tessera-cli"}
+	root.PersistentFlags().StringVar(&socketPath, "socket", os.ExpandEnv("$HOME/.tessera/admin.sock"), "admin socket path")
 
 	root.AddCommand(cmdBootstrap(), cmdUnlock(), cmdLock(), cmdStatus(), cmdUpstream(), cmdPolicy(), cmdToken())
 	return root
@@ -20,7 +20,7 @@ func newRoot() *cobra.Command {
 
 func cmdUnlock() *cobra.Command {
 	return &cobra.Command{
-		Use: "unlock", Short: "Unlock proxyd",
+		Use: "unlock", Short: "Unlock tessera",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			fmt.Print("Passphrase: ")
 			pw, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -36,7 +36,7 @@ func cmdUnlock() *cobra.Command {
 
 func cmdLock() *cobra.Command {
 	return &cobra.Command{
-		Use: "lock", Short: "Lock proxyd",
+		Use: "lock", Short: "Lock tessera",
 		RunE: func(*cobra.Command, []string) error {
 			return NewClient(socketPath).do("POST", "/v1/lock", nil, nil)
 		},

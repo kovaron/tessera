@@ -55,6 +55,6 @@ fn default_audit_path() -> String {
 fn default_audit_log_path() -> std::path::PathBuf {
     dirs::home_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
-        .join(".proxyd")
+        .join(".tessera")
         .join("audit.log")
 }

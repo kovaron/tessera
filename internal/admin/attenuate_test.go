@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kovaron/ai-secrets-manager/internal/authn"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/tessera/internal/authn"
+	"github.com/kovaron/tessera/internal/store"
 )
 
 func TestAttenuationCreatesChild(t *testing.T) {

@@ -14,11 +14,11 @@ fn home() -> PathBuf {
 }
 
 fn default_db() -> PathBuf {
-    home().join(".proxyd").join("data.db")
+    home().join(".tessera").join("data.db")
 }
 
 fn default_sock() -> PathBuf {
-    home().join(".proxyd").join("admin.sock")
+    home().join(".tessera").join("admin.sock")
 }
 
 #[tauri::command]
@@ -40,7 +40,7 @@ pub async fn run_bootstrap(
     let db = db_path.unwrap_or_else(|| default_db().to_string_lossy().into_owned());
     let sidecar = app
         .shell()
-        .sidecar("proxyctl")
+        .sidecar("tessera-cli")
         .map_err(|e| AppError::Http(e.to_string()))?;
     let (mut rx, mut child) = sidecar
         .args(["bootstrap", "--db", &db, "--passphrase-stdin"])
@@ -67,7 +67,7 @@ pub async fn run_bootstrap(
 
     if exit_code != Some(0) {
         return Err(AppError::Http(format!(
-            "proxyctl bootstrap failed (exit {:?}): {}",
+            "tessera-cli bootstrap failed (exit {:?}): {}",
             exit_code,
             String::from_utf8_lossy(&stderr)
         )));

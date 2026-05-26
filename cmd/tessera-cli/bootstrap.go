@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kovaron/ai-secrets-manager/internal/crypto"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/tessera/internal/crypto"
+	"github.com/kovaron/tessera/internal/store"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -61,7 +61,7 @@ func cmdBootstrap() *cobra.Command {
 			})
 		},
 	}
-	c.Flags().StringVar(&dbPath, "db", os.ExpandEnv("$HOME/.proxyd/data.db"), "")
+	c.Flags().StringVar(&dbPath, "db", os.ExpandEnv("$HOME/.tessera/data.db"), "")
 	c.Flags().BoolVar(&passphraseStdin, "passphrase-stdin", false, "read passphrase from stdin (one line, no confirm)")
 	return c
 }

@@ -14,12 +14,12 @@ export default function Settings() {
       <h1 className="text-xl font-semibold">Settings</h1>
       <section className="space-y-2">
         <Label>Admin socket path</Label>
-        <Input defaultValue="$HOME/.proxyd/admin.sock" disabled />
+        <Input defaultValue="$HOME/.tessera/admin.sock" disabled />
         <p className="text-xs text-muted-foreground">Configurable in future versions.</p>
       </section>
       <section className="space-y-2">
         <Label>Audit log path</Label>
-        <Input defaultValue="$HOME/.proxyd/audit.log" disabled />
+        <Input defaultValue="$HOME/.tessera/audit.log" disabled />
       </section>
       <section className="space-y-2">
         <div className="flex items-center justify-between">

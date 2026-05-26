@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kovaron/ai-secrets-manager/internal/audit"
-	"github.com/kovaron/ai-secrets-manager/internal/proxy"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
-	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
+	"github.com/kovaron/tessera/internal/audit"
+	"github.com/kovaron/tessera/internal/proxy"
+	"github.com/kovaron/tessera/internal/store"
+	"github.com/kovaron/tessera/internal/upstreams"
 )
 
 type fakeSec struct{}

@@ -16,7 +16,7 @@ export default function Unlock() {
           unlock.mutate(pw);
         }}
       >
-        <h1 className="text-lg font-semibold">Unlock proxyd</h1>
+        <h1 className="text-lg font-semibold">Unlock Tessera</h1>
         <Input
           autoFocus
           type="password"

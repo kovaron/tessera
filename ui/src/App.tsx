@@ -19,7 +19,7 @@ export default function App() {
   }, []);
 
   if (!detect) return null;
-  // proxyd reachable if status fetched successfully recently
+  // tessera reachable if status fetched successfully recently
   if (!status.data && (status.isError || !detect.socket_exists)) return <NotRunningBanner />;
   if (!detect.db_exists || status.data?.initialized === false) {
     return <BootstrapWizard onDone={() => api.detectState().then(setDetect)} />;

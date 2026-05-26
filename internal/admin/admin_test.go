@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kovaron/ai-secrets-manager/internal/crypto"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/tessera/internal/crypto"
+	"github.com/kovaron/tessera/internal/store"
 )
 
 func setup(t *testing.T) *Handlers {

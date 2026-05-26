@@ -3,7 +3,7 @@ use security_framework::passwords::{
     delete_generic_password, get_generic_password, set_generic_password,
 };
 
-const SERVICE: &str = "com.kovaron.proxyui";
+const SERVICE: &str = "com.kovaron.tessera";
 const ACCOUNT: &str = "passphrase";
 
 #[tauri::command]

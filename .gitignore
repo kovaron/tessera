@@ -1,5 +1,5 @@
-/proxyd
-/proxyctl
+/tessera
+/tessera-cli
 /dist
 *.db
 *.db-journal

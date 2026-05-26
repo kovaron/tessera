@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kovaron/ai-secrets-manager/internal/authn"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/tessera/internal/authn"
+	"github.com/kovaron/tessera/internal/store"
 	"github.com/oklog/ulid/v2"
 )
 

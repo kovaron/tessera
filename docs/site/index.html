@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>proxyd — short-lived API keys for AI agents</title>
+<title>Tessera — short-lived API keys for AI agents</title>
 <meta name="description" content="Local-first auth proxy that hands AI agents opaque scoped subtokens and swaps them for real upstream credentials at request time. Policy-gated, instantly revocable.">
 <style>
   :root {
@@ -117,7 +117,7 @@
 <body>
   <div class="container">
     <header>
-      <div class="brand">proxyd</div>
+      <div class="brand">Tessera</div>
       <nav>
         <a href="#how">How it works</a>
         <a href="#quickstart">Quick start</a>
@@ -128,7 +128,7 @@
     <section class="hero" style="border-top:0; padding-top: 24px;">
       <h1>Short-lived, <span>policy-gated</span> API keys for AI agents.</h1>
       <p>
-        proxyd hands your AI agents an opaque, scoped subtoken — and swaps it for a real upstream API credential
+        Tessera hands your AI agents an opaque, scoped subtoken — and swaps it for a real upstream API credential
         at request time. Live OPA policy, live secret resolution from 1Password / Doppler / Vault, instant revocation.
         Local-first. macOS-native admin UI.
       </p>
@@ -150,7 +150,7 @@
       </p>
 
       <div class="diagram">
-        <svg viewBox="0 0 1000 320" aria-label="proxyd data flow diagram">
+        <svg viewBox="0 0 1000 320" aria-label="Tessera data flow diagram">
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
               <path d="M0,0 L10,5 L0,10 Z" fill="#3a4358" />
@@ -168,17 +168,17 @@
             <text x="60" y="56" text-anchor="middle" fill="#8a94a6" font-size="12">holds pxy_… subtoken</text>
           </g>
 
-          <!-- proxyd -->
+          <!-- Tessera -->
           <g transform="translate(270, 130)">
             <rect width="200" height="140" rx="16" fill="url(#boxBg)" stroke="#2c3650"/>
-            <text x="100" y="30" text-anchor="middle" fill="#e7ecf3" font-size="14" font-weight="700">proxyd</text>
+            <text x="100" y="30" text-anchor="middle" fill="#e7ecf3" font-size="14" font-weight="700">Tessera</text>
             <text x="100" y="55" text-anchor="middle" fill="#8a94a6" font-size="11">authn → authz → inject</text>
             <text x="100" y="82" text-anchor="middle" fill="#7dd3fc" font-size="11">▸ subtoken → store hash lookup</text>
             <text x="100" y="100" text-anchor="middle" fill="#7dd3fc" font-size="11">▸ OPA policy gate</text>
             <text x="100" y="118" text-anchor="middle" fill="#7dd3fc" font-size="11">▸ strip Authorization/Cookie</text>
           </g>
 
-          <!-- guard around proxyd -->
+          <!-- guard around Tessera -->
           <rect class="guard" x="260" y="120" width="220" height="160" rx="20" />
           <text x="370" y="296" text-anchor="middle" fill="#f87171" font-size="11" font-weight="600">policy + lock + audit</text>
 
@@ -242,7 +242,7 @@
         </div>
         <div class="card">
           <h3>Lock middleware</h3>
-          <p>If the DEK isn't loaded (proxyd locked), every data-plane request returns 503 immediately. No accidental exposure during a restart.</p>
+          <p>If the DEK isn't loaded (Tessera locked), every data-plane request returns 503 immediately. No accidental exposure during a restart.</p>
         </div>
         <div class="card">
           <h3>Audit log</h3>
@@ -266,22 +266,22 @@
 make build
 
 # 2. Bootstrap keystore (one time)
-./proxyctl bootstrap
+./tessera-cli bootstrap
 
 # 3. Start the proxy
-UPSTREAM_TOKEN=ghp_real_secret ./proxyd &
+UPSTREAM_TOKEN=ghp_real_secret ./tessera &
 
 # 4. Unlock + mint a token via the macOS UI
-#    (or proxyctl unlock + token mint)</code></pre>
+#    (or tessera-cli unlock + token mint)</code></pre>
         </div>
         <div>
           <pre><code># 5. Hit the proxy as your AI agent would
 curl -H "Authorization: Bearer pxy_…" \
      http://127.0.0.1:8080/u/github/repos/acme/widgets/issues
 
-# proxyd swaps pxy_… for ghp_real_secret
+# Tessera swaps pxy_… for ghp_real_secret
 # OPA policy gates the call
-# audit event lands in ~/.proxyd/audit.log</code></pre>
+# audit event lands in ~/.tessera/audit.log</code></pre>
         </div>
       </div>
     </section>

@@ -1,10 +1,10 @@
 server:
   listen: "127.0.0.1:8080"
-  admin_socket: "/var/run/ai-secrets-manager/admin.sock"
+  admin_socket: "/var/run/tessera/admin.sock"
 
 store:
   driver: sqlite
-  path: "/var/lib/ai-secrets-manager/secrets.db"
+  path: "/var/lib/tessera/secrets.db"
 
 secrets:
   default_ttl: 15m
@@ -14,11 +14,11 @@ secrets:
       prefix: "env://"
     - name: 1password
       prefix: "op://"
-      vault: "AI Secrets Manager"
+      vault: "Tessera"
       service_account_token_env: OP_SERVICE_ACCOUNT_TOKEN
     - name: doppler
       prefix: "doppler://"
-      project: ai-secrets-manager
+      project: tessera
       config: production
       token_env: DOPPLER_TOKEN
 
@@ -31,7 +31,7 @@ upstreams:
     base_url: "https://api.github.com"
     inject:
       type: bearer
-      secret_ref: "op://AI Secrets Manager/github-pat/token"
+      secret_ref: "op://Tessera/github-pat/token"
 
   - id: openai
     base_url: "https://api.openai.com"

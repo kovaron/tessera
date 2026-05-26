@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/kovaron/ai-secrets-manager/internal/crypto"
+	"github.com/kovaron/tessera/internal/crypto"
 )
 
 func (h *Handlers) unlock(w http.ResponseWriter, r *http.Request) {

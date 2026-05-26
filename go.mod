@@ -1,4 +1,4 @@
-module github.com/kovaron/ai-secrets-manager
+module github.com/kovaron/tessera
 
 go 1.25.0
 

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kovaron/ai-secrets-manager/internal/audit"
-	"github.com/kovaron/ai-secrets-manager/internal/authz"
+	"github.com/kovaron/tessera/internal/audit"
+	"github.com/kovaron/tessera/internal/authz"
 )
 
 // PolicySource returns decrypted policy text and engine name for a policy_id.

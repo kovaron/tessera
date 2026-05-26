@@ -11,21 +11,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kovaron/ai-secrets-manager/internal/admin"
-	"github.com/kovaron/ai-secrets-manager/internal/audit"
-	"github.com/kovaron/ai-secrets-manager/internal/authz"
-	"github.com/kovaron/ai-secrets-manager/internal/crypto"
-	"github.com/kovaron/ai-secrets-manager/internal/proxy"
-	"github.com/kovaron/ai-secrets-manager/internal/secrets"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
-	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
+	"github.com/kovaron/tessera/internal/admin"
+	"github.com/kovaron/tessera/internal/audit"
+	"github.com/kovaron/tessera/internal/authz"
+	"github.com/kovaron/tessera/internal/crypto"
+	"github.com/kovaron/tessera/internal/proxy"
+	"github.com/kovaron/tessera/internal/secrets"
+	"github.com/kovaron/tessera/internal/store"
+	"github.com/kovaron/tessera/internal/upstreams"
 )
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:8080", "listen addr")
-	dbPath := flag.String("db", os.ExpandEnv("$HOME/.proxyd/data.db"), "sqlite path")
-	sockPath := flag.String("admin-socket", os.ExpandEnv("$HOME/.proxyd/admin.sock"), "admin socket")
-	auditPath := flag.String("audit-log", os.ExpandEnv("$HOME/.proxyd/audit.log"), "audit log file path")
+	dbPath := flag.String("db", os.ExpandEnv("$HOME/.tessera/data.db"), "sqlite path")
+	sockPath := flag.String("admin-socket", os.ExpandEnv("$HOME/.tessera/admin.sock"), "admin socket")
+	auditPath := flag.String("audit-log", os.ExpandEnv("$HOME/.tessera/audit.log"), "audit log file path")
 	auditMax := flag.Int64("audit-rotate-bytes", 100*1024*1024, "audit log rotation size")
 	auditKeep := flag.Int("audit-keep", 5, "audit log rotations to keep")
 	flag.Parse()
@@ -82,7 +82,7 @@ func main() {
 
 	srv := &http.Server{Addr: *addr, Handler: dp.Handler()}
 	go func() {
-		log.Printf("proxyd listening on %s", *addr)
+		log.Printf("tessera listening on %s", *addr)
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatal(err)
 		}

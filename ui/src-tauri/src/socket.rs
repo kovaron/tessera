@@ -96,11 +96,11 @@ impl SocketClient {
 
 pub fn default_socket_path() -> String {
     if let Some(home) = dirs::home_dir() {
-        home.join(".proxyd").join("admin.sock")
+        home.join(".tessera").join("admin.sock")
             .to_string_lossy()
             .into_owned()
     } else {
-        "/tmp/proxyd-admin.sock".into()
+        "/tmp/tessera-admin.sock".into()
     }
 }
 

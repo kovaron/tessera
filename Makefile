@@ -1,8 +1,8 @@
 .PHONY: build test lint clean
 
 build:
-	go build -o proxyd ./cmd/proxyd
-	go build -o proxyctl ./cmd/proxyctl
+	go build -o tessera ./cmd/tessera
+	go build -o tessera-cli ./cmd/tessera-cli
 
 test:
 	go test ./... -race -count=1
@@ -11,10 +11,10 @@ lint:
 	go vet ./...
 
 clean:
-	rm -f proxyd proxyctl coverage.out
+	rm -f tessera tessera-cli coverage.out
 
 .PHONY: sidecar
 sidecar:
 	mkdir -p ui/src-tauri/binaries
-	GOOS=darwin GOARCH=arm64 go build -o ui/src-tauri/binaries/proxyctl-aarch64-apple-darwin ./cmd/proxyctl
-	GOOS=darwin GOARCH=amd64 go build -o ui/src-tauri/binaries/proxyctl-x86_64-apple-darwin ./cmd/proxyctl
+	GOOS=darwin GOARCH=arm64 go build -o ui/src-tauri/binaries/tessera-cli-aarch64-apple-darwin ./cmd/tessera-cli
+	GOOS=darwin GOARCH=amd64 go build -o ui/src-tauri/binaries/tessera-cli-x86_64-apple-darwin ./cmd/tessera-cli

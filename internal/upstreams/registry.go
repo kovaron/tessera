@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/tessera/internal/store"
 )
 
 type Upstream struct {

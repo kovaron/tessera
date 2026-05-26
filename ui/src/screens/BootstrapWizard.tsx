@@ -33,10 +33,10 @@ export default function BootstrapWizard({ onDone }: Props) {
       <div className="max-w-md w-full space-y-4">
         {step === "welcome" && (
           <>
-            <h1 className="text-xl font-semibold">Welcome to proxyui</h1>
+            <h1 className="text-xl font-semibold">Welcome to Tessera</h1>
             <p className="text-sm text-muted-foreground">
-              proxyd has not been bootstrapped. Set a passphrase to create the keystore at
-              <code className="text-xs"> $HOME/.proxyd/data.db</code>.
+              Tessera has not been bootstrapped. Set a passphrase to create the keystore at
+              <code className="text-xs"> $HOME/.tessera/data.db</code>.
             </p>
             <Button onClick={() => setStep("passphrase")}>Continue</Button>
           </>
@@ -58,8 +58,8 @@ export default function BootstrapWizard({ onDone }: Props) {
         {step === "done" && (
           <>
             <h1 className="text-xl font-semibold">Done</h1>
-            <p className="text-sm">Now start proxyd. Run from a terminal:</p>
-            <code className="block bg-muted p-2 rounded text-xs">proxyd &amp;</code>
+            <p className="text-sm">Now start tessera. Run from a terminal:</p>
+            <code className="block bg-muted p-2 rounded text-xs">tessera &amp;</code>
             <Button onClick={onDone}>Continue</Button>
           </>
         )}

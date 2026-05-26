@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/kovaron/ai-secrets-manager/internal/crypto"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
-	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
+	"github.com/kovaron/tessera/internal/crypto"
+	"github.com/kovaron/tessera/internal/store"
+	"github.com/kovaron/tessera/internal/upstreams"
 )
 
 type State struct {

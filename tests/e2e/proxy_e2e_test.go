@@ -18,11 +18,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kovaron/ai-secrets-manager/internal/crypto"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/tessera/internal/crypto"
+	"github.com/kovaron/tessera/internal/store"
 )
 
-// adminClient talks to proxyd's unix-socket admin API.
+// adminClient talks to tessera's unix-socket admin API.
 type adminClient struct {
 	hc *http.Client
 }
@@ -111,9 +111,9 @@ func buildBinary(t *testing.T, pkg, dest string) {
 func TestMintCallRevoke(t *testing.T) {
 	const passphrase = "testpassword"
 
-	// 1. Build proxyd binary.
-	proxydBin := filepath.Join(t.TempDir(), "proxyd")
-	buildBinary(t, "./cmd/proxyd", proxydBin)
+	// 1. Build tessera binary.
+	proxydBin := filepath.Join(t.TempDir(), "tessera")
+	buildBinary(t, "./cmd/tessera", proxydBin)
 
 	// 2. Allocate temp paths.
 	dir := t.TempDir()
@@ -132,7 +132,7 @@ func TestMintCallRevoke(t *testing.T) {
 	}))
 	defer fakeUpstream.Close()
 
-	// 5. Start proxyd with UPSTREAM_TOKEN env var.
+	// 5. Start tessera with UPSTREAM_TOKEN env var.
 	proxydCmd := exec.Command(proxydBin,
 		"-addr", dataAddr,
 		"-db", dbPath,
@@ -142,7 +142,7 @@ func TestMintCallRevoke(t *testing.T) {
 	proxydCmd.Stdout = os.Stdout
 	proxydCmd.Stderr = os.Stderr
 	if err := proxydCmd.Start(); err != nil {
-		t.Fatalf("start proxyd: %v", err)
+		t.Fatalf("start tessera: %v", err)
 	}
 	defer proxydCmd.Process.Kill()
 

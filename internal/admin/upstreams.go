@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kovaron/ai-secrets-manager/internal/store"
-	"github.com/kovaron/ai-secrets-manager/internal/upstreams"
+	"github.com/kovaron/tessera/internal/store"
+	"github.com/kovaron/tessera/internal/upstreams"
 )
 
 func (h *Handlers) registerUpstreams() {

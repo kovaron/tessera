@@ -2,9 +2,9 @@ name: ui
 
 on:
   push:
-    paths: ["ui/**", "internal/audit/**", "cmd/proxyd/**", ".github/workflows/ui.yml"]
+    paths: ["ui/**", "internal/audit/**", "cmd/tessera/**", ".github/workflows/ui.yml"]
   pull_request:
-    paths: ["ui/**", "internal/audit/**", "cmd/proxyd/**", ".github/workflows/ui.yml"]
+    paths: ["ui/**", "internal/audit/**", "cmd/tessera/**", ".github/workflows/ui.yml"]
 
 jobs:
   test:

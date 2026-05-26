@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kovaron/ai-secrets-manager/internal/audit"
-	"github.com/kovaron/ai-secrets-manager/internal/authz"
-	"github.com/kovaron/ai-secrets-manager/internal/store"
+	"github.com/kovaron/tessera/internal/audit"
+	"github.com/kovaron/tessera/internal/authz"
+	"github.com/kovaron/tessera/internal/store"
 )
 
 const policySrc = `package proxy.authz
