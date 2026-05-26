@@ -43,11 +43,11 @@ pub async fn run_bootstrap(
         .sidecar("proxyctl")
         .map_err(|e| AppError::Http(e.to_string()))?;
     let (mut rx, mut child) = sidecar
-        .args(["bootstrap", "--db", &db])
+        .args(["bootstrap", "--db", &db, "--passphrase-stdin"])
         .spawn()
         .map_err(|e| AppError::Http(e.to_string()))?;
 
-    let payload = format!("{0}\n{0}\n", passphrase);
+    let payload = format!("{}\n", passphrase);
     child
         .write(payload.as_bytes())
         .map_err(|e| AppError::Http(e.to_string()))?;

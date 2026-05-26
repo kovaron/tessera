@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router } from "./router";
 import { mountAuditListener } from "@/hooks/useAudit";
+import "./globals.css";
 import "./App.css";
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 2000 } } });

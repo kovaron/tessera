@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kovaron/ai-secrets-manager/internal/crypto"
@@ -14,17 +16,32 @@ import (
 
 func cmdBootstrap() *cobra.Command {
 	var dbPath string
+	var passphraseStdin bool
 	c := &cobra.Command{
 		Use: "bootstrap",
 		RunE: func(*cobra.Command, []string) error {
-			fmt.Print("New passphrase: ")
-			pw, _ := term.ReadPassword(int(os.Stdin.Fd()))
-			fmt.Println()
-			fmt.Print("Confirm: ")
-			pw2, _ := term.ReadPassword(int(os.Stdin.Fd()))
-			fmt.Println()
-			if string(pw) != string(pw2) {
-				return fmt.Errorf("passphrase mismatch")
+			var pw []byte
+			if passphraseStdin {
+				r := bufio.NewReader(os.Stdin)
+				line, err := r.ReadString('\n')
+				if err != nil {
+					return err
+				}
+				pw = []byte(strings.TrimRight(line, "\r\n"))
+			} else {
+				fmt.Print("New passphrase: ")
+				p, _ := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Println()
+				fmt.Print("Confirm: ")
+				p2, _ := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Println()
+				if string(p) != string(p2) {
+					return fmt.Errorf("passphrase mismatch")
+				}
+				pw = p
+			}
+			if len(pw) == 0 {
+				return fmt.Errorf("empty passphrase")
 			}
 
 			s, err := store.OpenSQLite(dbPath)
@@ -45,5 +62,6 @@ func cmdBootstrap() *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&dbPath, "db", os.ExpandEnv("$HOME/.proxyd/data.db"), "")
+	c.Flags().BoolVar(&passphraseStdin, "passphrase-stdin", false, "read passphrase from stdin (one line, no confirm)")
 	return c
 }
