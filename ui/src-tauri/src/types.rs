@@ -44,8 +44,6 @@ pub struct UpsertUpstreamReq {
 pub struct Token {
     #[serde(rename = "ID")]
     pub id: String,
-    #[serde(rename = "Hash")]
-    pub hash: Vec<u8>,
     #[serde(rename = "ParentID")]
     pub parent_id: Option<String>,
     #[serde(rename = "Label")]

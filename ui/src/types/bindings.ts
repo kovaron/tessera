@@ -26,7 +26,6 @@ export type UpsertUpstreamReq = {
 
 export type Token = {
   ID: string;
-  Hash: number[];
   ParentID: string | null;
   Label: string;
   PolicyID: string;

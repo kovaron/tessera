@@ -34,7 +34,7 @@ type Store interface {
 
 type Token struct {
 	ID         string
-	Hash       []byte
+	Hash       []byte `json:"-"`
 	ParentID   *string
 	Label      string
 	PolicyID   string

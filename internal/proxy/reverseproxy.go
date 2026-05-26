@@ -56,16 +56,18 @@ func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver, log *audit
 				req.Header.Set("X-Inject-Error", err.Error())
 			}
 		}
+		var upstreamErr string
 		rp := &httputil.ReverseProxy{
 			Director: director,
 			ErrorHandler: func(w http.ResponseWriter, _ *http.Request, e error) {
+				upstreamErr = e.Error()
 				http.Error(w, fmt.Sprintf("upstream: %v", e), http.StatusBadGateway)
 			},
 		}
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, status: 200}
 		rp.ServeHTTP(sw, r)
-		log.Emit(audit.Event{
+		ev := audit.Event{
 			TokenID:        tok.ID,
 			TokenLabel:     tok.Label,
 			UpstreamID:     id,
@@ -77,7 +79,11 @@ func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver, log *audit
 			Status:         sw.status,
 			LatencyMS:      time.Since(start).Milliseconds(),
 			RemoteAddr:     r.RemoteAddr,
-		})
+		}
+		if upstreamErr != "" {
+			ev.DenyReason = "upstream_error: " + upstreamErr
+		}
+		log.Emit(ev)
 	})
 }
 
