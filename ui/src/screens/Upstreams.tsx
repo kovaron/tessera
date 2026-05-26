@@ -22,6 +22,35 @@ function toInjectRule(raw: unknown): InjectRule {
   return { ...emptyInject };
 }
 
+function InjectCell({ raw }: { raw: unknown }) {
+  const r = toInjectRule(raw);
+  return (
+    <div className="flex flex-col gap-0.5 font-mono text-[11px] leading-tight">
+      <div>
+        <span className="text-muted-foreground">type</span>{" "}
+        <span className="text-foreground">{r.type}</span>
+        {r.name && (
+          <>
+            {" · "}
+            <span className="text-muted-foreground">name</span>{" "}
+            <span className="text-foreground">{r.name}</span>
+          </>
+        )}
+      </div>
+      <div className="truncate" title={r.secret_ref}>
+        <span className="text-muted-foreground">ref</span>{" "}
+        <span className="text-foreground">{r.secret_ref}</span>
+      </div>
+      {r.value_template && (
+        <div className="truncate" title={r.value_template}>
+          <span className="text-muted-foreground">tmpl</span>{" "}
+          <span className="text-foreground">{r.value_template}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Upstreams() {
   const upstreams = useUpstreams();
   const data = upstreams.data ?? [];
@@ -48,9 +77,9 @@ export default function Upstreams() {
 
   return (
     <div className="p-6 space-y-4">
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center">
         <h1 className="text-xl font-semibold">Upstreams</h1>
-        <Button onClick={openAdd}>Add</Button>
+        <Button onClick={openAdd}>Add upstream</Button>
       </div>
 
       <Sheet open={editing !== null} onOpenChange={(o) => { if (!o) close(); }}>
@@ -67,7 +96,7 @@ export default function Upstreams() {
                   disabled={isEdit}
                   onChange={(e) => setEditing({ ...editing, id: e.target.value })}
                 />
-                {isEdit && <p className="text-xs text-muted-foreground">ID is the primary key. To rename, delete and recreate.</p>}
+                {isEdit && <p className="text-xs text-muted-foreground mt-1">ID is the primary key. To rename, delete and recreate.</p>}
               </div>
               <div>
                 <Label>Base URL</Label>
@@ -91,28 +120,47 @@ export default function Upstreams() {
       {upstreams.isError && (
         <p className="text-xs text-red-500">list failed: {String(upstreams.error)}</p>
       )}
-      <p className="text-xs text-muted-foreground">{data.length} upstream(s)</p>
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-muted-foreground">
-            <th>ID</th><th>Base URL</th><th>Inject</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((u) => (
-            <tr key={u.ID} className="border-t">
-              <td className="py-2">{u.ID}</td>
-              <td>{u.BaseURL}</td>
-              <td><code className="text-xs">{JSON.stringify(u.InjectJSON)}</code></td>
-              <td className="text-right space-x-1">
-                <Button size="sm" variant="outline" onClick={() => openEdit(u)}>Edit</Button>
-                <Button size="sm" variant="ghost" onClick={() => del.mutate(u.ID)}>Delete</Button>
-              </td>
+      <div className="rounded-md border overflow-hidden">
+        <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "34%" }} />
+            <col style={{ width: "36%" }} />
+            <col style={{ width: "12%" }} />
+          </colgroup>
+          <thead className="bg-muted/40">
+            <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <th className="px-3 py-2">ID</th>
+              <th className="px-3 py-2">Base URL</th>
+              <th className="px-3 py-2">Inject</th>
+              <th className="px-3 py-2"></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.length === 0 && (
+              <tr>
+                <td className="px-3 py-6 text-center text-muted-foreground" colSpan={4}>
+                  No upstreams yet. Click <em>Add upstream</em>.
+                </td>
+              </tr>
+            )}
+            {data.map((u) => (
+              <tr key={u.ID} className="border-t hover:bg-muted/30">
+                <td className="px-3 py-2 font-mono text-xs truncate" title={u.ID}>{u.ID}</td>
+                <td className="px-3 py-2 font-mono text-xs truncate" title={u.BaseURL}>{u.BaseURL}</td>
+                <td className="px-3 py-2"><InjectCell raw={u.InjectJSON} /></td>
+                <td className="px-3 py-2 text-right whitespace-nowrap">
+                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => openEdit(u)}>Edit</Button>{" "}
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-red-500 hover:text-red-400" onClick={() => del.mutate(u.ID)}>Delete</Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-xs text-muted-foreground">{data.length} upstream(s)</p>
     </div>
   );
 }

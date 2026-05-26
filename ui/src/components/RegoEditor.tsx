@@ -12,7 +12,7 @@ export default function RegoEditor({ value, onChange }: Props) {
   const v = useMemo(() => quickValidate(value), [value]);
   const isDark = useIsDark();
   return (
-    <div className="flex h-[60vh] gap-4">
+    <div className="flex h-full gap-4">
       <div className="flex-1 border rounded overflow-hidden">
         <Editor
           height="100%"
