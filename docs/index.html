@@ -49,6 +49,22 @@
   @media (max-width: 800px) {
     .grid-3, .grid-2 { grid-template-columns: 1fr; }
   }
+  @media (max-width: 600px) {
+    .container { padding: 0 16px; }
+    header { padding: 18px 0; flex-wrap: wrap; gap: 8px 14px; }
+    header nav { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+    header nav a { margin-left: 0; }
+    .hero { padding: 24px 0 36px; }
+    .hero h1 { font-size: clamp(30px, 9vw, 44px); overflow-wrap: break-word; hyphens: manual; }
+    .hero p { font-size: 16px; }
+    section { padding: 36px 0; }
+    section h2 { font-size: 22px; }
+    .diagram { padding: 12px; }
+    .diagram-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-scroll svg { min-width: 720px; }
+    .legend { font-size: 12px; gap: 10px; }
+    pre { font-size: 12px; padding: 12px; }
+  }
   .card { background: var(--bg-2); border:1px solid var(--line); border-radius: 14px; padding: 18px; }
   .card h3 { margin: 0 0 8px; font-size: 16px; }
   .card p { margin: 0; color: var(--muted); font-size: 14px; }
@@ -153,6 +169,7 @@
       </p>
 
       <div class="diagram">
+       <div class="diagram-scroll">
         <svg viewBox="0 0 1000 320" aria-label="Tessera data flow diagram">
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -215,6 +232,7 @@
           <circle class="flow-dot upstream-dot" cx="0" cy="0" r="5" style="fill: var(--good);"/>
           <circle class="flow-dot response-dot" cx="0" cy="0" r="4" style="fill: #94a3b8;"/>
         </svg>
+       </div>
 
         <div class="legend">
           <span class="k"><span class="dot" style="background:var(--accent)"></span>opaque subtoken (in)</span>
