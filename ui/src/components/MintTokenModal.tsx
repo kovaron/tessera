@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { api } from "@/lib/invoke";
 import { useMintToken } from "@/hooks/useTokens";
 import { useUpstreams } from "@/hooks/useUpstreams";
+import { useListPolicies } from "@/hooks/usePolicies";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -18,7 +19,9 @@ export default function MintTokenModal({ open, onClose }: Props) {
   const [secret, setSecret] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const { data: upstreams = [] } = useUpstreams();
+  const { data: policies = [] } = useListPolicies();
   const mint = useMintToken();
+  const applicablePolicies = policies.filter((p) => !p.upstream_id || p.upstream_id === upstreamId);
 
   const submit = () => {
     mint.mutate(
@@ -57,14 +60,24 @@ export default function MintTokenModal({ open, onClose }: Props) {
             <div><Label>Label</Label><Input value={label} onChange={(e) => setLabel(e.target.value)} /></div>
             <div>
               <Label>Upstream</Label>
-              <select className="w-full border rounded p-2" value={upstreamId} onChange={(e) => setUpstreamId(e.target.value)}>
+              <select className="w-full border rounded p-2" value={upstreamId} onChange={(e) => { setUpstreamId(e.target.value); setPolicyId(""); }}>
                 <option value="">— pick —</option>
                 {upstreams.map((u) => <option key={u.ID} value={u.ID}>{u.ID}</option>)}
               </select>
             </div>
             <div>
-              <Label>Policy ID</Label>
-              <Input value={policyId} onChange={(e) => setPolicyId(e.target.value)} placeholder="ULID" />
+              <Label>Policy</Label>
+              <select className="w-full border rounded p-2" value={policyId} onChange={(e) => setPolicyId(e.target.value)} disabled={!upstreamId}>
+                <option value="">{upstreamId ? "— pick —" : "pick upstream first"}</option>
+                {applicablePolicies.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {(p.name || p.id.slice(0, 8))}{p.upstream_id ? "" : " (global)"}
+                  </option>
+                ))}
+              </select>
+              {upstreamId && applicablePolicies.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">No policies for this upstream. Create one in Policies.</p>
+              )}
             </div>
             <div>
               <Label>TTL: {ttl}s ({Math.round(ttl / 60)}min)</Label>

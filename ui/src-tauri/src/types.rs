@@ -84,6 +84,9 @@ pub struct AttenuateReq {
 
 #[derive(Serialize, Deserialize, Type, Debug, Clone)]
 pub struct CreatePolicyReq {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub upstream_id: Option<String>,
     pub engine: String,
     pub source: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -93,6 +96,21 @@ pub struct CreatePolicyReq {
 #[derive(Serialize, Deserialize, Type, Debug, Clone)]
 pub struct CreatePolicyResp {
     pub id: String,
+}
+
+#[derive(Serialize, Deserialize, Type, Debug, Clone)]
+pub struct Policy {
+    pub id: String,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub upstream_id: Option<String>,
+    pub engine: String,
+    #[serde(default)]
+    pub subset_of: Option<String>,
+    pub created_at: i64,
+    #[serde(default)]
+    pub source: String,
 }
 
 #[derive(Serialize, Deserialize, Type, Debug, Clone)]

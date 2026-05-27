@@ -92,6 +92,12 @@ impl SocketClient {
             .await
             .map(|_| ())
     }
+
+    pub async fn put<T: Serialize>(&self, path: &str, body: &T) -> Result<(), AppError> {
+        self.request::<T, serde_json::Value>(Method::PUT, path, Some(body))
+            .await
+            .map(|_| ())
+    }
 }
 
 pub fn default_socket_path() -> String {

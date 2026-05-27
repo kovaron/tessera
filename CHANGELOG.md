@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ### Added
 - Project logo, README naming explanation, OSS scaffolding (LICENSE, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CHANGELOG.md, issue + PR templates, examples directory, architecture overview).
+- Multiple policies per upstream. Policies now carry a `name` and optional `upstream_id` — a policy with no upstream is global and applies to any. `GET /v1/policies`, `GET/PUT/DELETE /v1/policies/{id}` admin endpoints. UI Policies screen reworked into a list grouped by upstream with a side-drawer editor. Token mint dropdown filters policies by the chosen upstream. Existing policies migrate forward via `ALTER TABLE` with sensible defaults (empty name, null upstream = global).
 
 ## [admin-ui-v0.1.0] — 2026-05-24
 

@@ -52,12 +52,24 @@ export type AttenuateReq = {
 };
 
 export type CreatePolicyReq = {
+  name: string;
+  upstream_id?: string | null;
   engine: string;
   source: string;
   subset_of?: string | null;
 };
 
 export type CreatePolicyResp = { id: string };
+
+export type Policy = {
+  id: string;
+  name: string;
+  upstream_id?: string | null;
+  engine: string;
+  subset_of?: string | null;
+  created_at: number;
+  source?: string;
+};
 
 export type AuditEvent = {
   ts: string;
@@ -88,6 +100,10 @@ export const commands = {
   deleteUpstream: (id: string): Promise<void> => invoke("delete_upstream", { id }),
 
   createPolicy: (req: CreatePolicyReq): Promise<CreatePolicyResp> => invoke("create_policy", { req }),
+  listPolicies: (): Promise<Policy[]> => invoke("list_policies"),
+  getPolicy: (id: string): Promise<Policy> => invoke("get_policy", { id }),
+  updatePolicy: (id: string, req: CreatePolicyReq): Promise<void> => invoke("update_policy", { id, req }),
+  deletePolicy: (id: string): Promise<void> => invoke("delete_policy", { id }),
 
   listTokens: (): Promise<Token[]> => invoke("list_tokens"),
   mintToken: (req: MintTokenReq): Promise<MintTokenResp> => invoke("mint_token", { req }),

@@ -48,6 +48,8 @@ type Token struct {
 
 type PolicyRow struct {
 	ID          string
+	Name        string
+	UpstreamID  *string
 	Engine      string
 	SourceCT    []byte
 	SourceNonce []byte

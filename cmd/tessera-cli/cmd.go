@@ -89,7 +89,7 @@ func cmdUpstream() *cobra.Command {
 }
 
 func cmdPolicy() *cobra.Command {
-	var engine, file string
+	var engine, file, name, upstream string
 	p := &cobra.Command{Use: "policy"}
 	add := &cobra.Command{
 		Use: "add", Args: cobra.NoArgs,
@@ -98,10 +98,16 @@ func cmdPolicy() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			body := map[string]any{
+				"engine": engine,
+				"source": string(b),
+				"name":   name,
+			}
+			if upstream != "" {
+				body["upstream_id"] = upstream
+			}
 			var out map[string]string
-			if err := NewClient(socketPath).do("POST", "/v1/policies", map[string]any{
-				"engine": engine, "source": string(b),
-			}, &out); err != nil {
+			if err := NewClient(socketPath).do("POST", "/v1/policies", body, &out); err != nil {
 				return err
 			}
 			fmt.Println(out["id"])
@@ -110,6 +116,8 @@ func cmdPolicy() *cobra.Command {
 	}
 	add.Flags().StringVar(&engine, "engine", "opa", "")
 	add.Flags().StringVar(&file, "file", "", "rego file")
+	add.Flags().StringVar(&name, "name", "", "human label")
+	add.Flags().StringVar(&upstream, "upstream", "", "scope policy to this upstream id (empty = global)")
 	p.AddCommand(add)
 	return p
 }

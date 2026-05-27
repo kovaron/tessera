@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { api } from "@/lib/invoke";
 import { useAttenuateToken } from "@/hooks/useTokens";
+import { useListPolicies } from "@/hooks/usePolicies";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -17,6 +18,7 @@ export default function AttenuateModal({ open, onClose }: Props) {
   const [secret, setSecret] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const att = useAttenuateToken();
+  const { data: policies = [] } = useListPolicies();
 
   const submit = () => {
     att.mutate(
@@ -48,7 +50,17 @@ export default function AttenuateModal({ open, onClose }: Props) {
           <div className="space-y-3">
             <div><Label>Parent token (paste plaintext)</Label><Input type="password" value={parentToken} onChange={(e) => setParent(e.target.value)} /></div>
             <div><Label>Label</Label><Input value={label} onChange={(e) => setLabel(e.target.value)} /></div>
-            <div><Label>Policy ID (subset of parent's policy)</Label><Input value={policyId} onChange={(e) => setPolicyId(e.target.value)} /></div>
+            <div>
+              <Label>Policy (subset of parent's policy)</Label>
+              <select className="w-full border rounded p-2" value={policyId} onChange={(e) => setPolicyId(e.target.value)}>
+                <option value="">— pick —</option>
+                {policies.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {(p.name || p.id.slice(0, 8))}{p.upstream_id ? ` · ${p.upstream_id}` : " (global)"}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div><Label>TTL: {ttl}s</Label><Slider min={60} max={86400} step={60} value={[ttl]} onValueChange={(v) => setTtl(v[0])} /></div>
             <Button disabled={!parentToken || !label || !policyId || att.isPending} onClick={submit}>Attenuate</Button>
           </div>

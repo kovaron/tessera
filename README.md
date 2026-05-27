@@ -105,8 +105,10 @@ curl --unix-socket ~/.tessera/admin.sock -s \
 ### 5. Add a policy
 
 ```bash
-./tessera-cli policy add --engine opa --file policy.rego
+./tessera-cli policy add --engine opa --file policy.rego --name read-only --upstream openai
 ```
+
+Omit `--upstream` to create a global policy that any upstream can use. The same name can be reused across different upstreams.
 
 Example `policy.rego` (Rego v1 syntax):
 
