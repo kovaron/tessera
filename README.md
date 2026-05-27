@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/site/assets/logo.png" alt="Tessera" width="180" />
+  <img src="docs/assets/logo.png" alt="Tessera" width="180" />
 </p>
 
 <h1 align="center">Tessera</h1>
