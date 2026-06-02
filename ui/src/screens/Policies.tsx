@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { quickValidate } from "@/lib/rego-compile";
 import type { Policy } from "@/types/bindings";
 
@@ -39,6 +40,7 @@ export default function Policies() {
   const del = useDeletePolicy();
 
   const [open, setOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<Policy | null>(null);
   const [editor, setEditor] = useState<EditorState>({
     mode: "create",
     id: null,
@@ -116,9 +118,7 @@ export default function Policies() {
                   size="sm"
                   variant="outline"
                   className="text-red-600 hover:text-red-700"
-                  onClick={() => {
-                    if (confirm(`Delete policy ${p.name || p.id}?`)) del.mutate(p.id);
-                  }}
+                  onClick={() => setToDelete(p)}
                 >
                   Delete
                 </Button>
@@ -151,6 +151,24 @@ export default function Policies() {
           {groupKeys.map((k) => grouped[k] && renderGroup(k, grouped[k]))}
         </div>
       )}
+
+      {del.isError && (
+        <p className="text-xs text-red-500 break-all">delete failed: {String(del.error)}</p>
+      )}
+
+      <ConfirmDialog
+        open={toDelete !== null}
+        title={`Delete policy ${toDelete?.name || toDelete?.id || ""}?`}
+        description="Tokens already minted under this policy will fail authz on the next request (proxy returns deny: policy_unavailable)."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          const id = toDelete!.id;
+          setToDelete(null);
+          del.mutate(id);
+        }}
+        onCancel={() => setToDelete(null)}
+      />
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-[800px] sm:max-w-[800px] flex flex-col">
