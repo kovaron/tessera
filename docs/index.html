@@ -145,11 +145,14 @@
 
     <section class="hero" style="border-top:0; padding-top: 24px;">
       <img src="assets/logo.png" alt="" style="width:96px;height:96px;border-radius:16px;display:block;margin-bottom:24px;filter:drop-shadow(0 0 24px rgba(125,211,252,.25));">
-      <h1>Short-lived, <span>policy-gated</span> API keys for AI agents.</h1>
+      <h1>Stop handing your <span>real API keys</span> to AI agents.</h1>
       <p>
-        Tessera hands your AI agents an opaque, scoped subtoken — and swaps it for a real upstream API credential
-        at request time. Live OPA policy, live secret resolution from 1Password / Doppler / Vault, instant revocation.
-        Local-first. macOS-native admin UI.
+        Your agent needs the OpenAI / GitHub / Stripe key to do its job. You don't want a prompt-injected model
+        exfiltrating it, an MCP server logging it, or a runaway loop running up a $4k bill before you notice.
+      </p>
+      <p style="color: var(--fg); font-weight: 500;">
+        Tessera is a local proxy. Give the agent a disposable token instead — bound to one API, one policy, one TTL.
+        Revoke any time. The real key never leaves your machine.
       </p>
       <div class="cta">
         <a class="btn primary" href="https://github.com/kovaron/tessera">
@@ -160,12 +163,73 @@
       </div>
     </section>
 
+    <section id="compare">
+      <span class="pill">before / after</span>
+      <h2>Before Tessera, after Tessera.</h2>
+      <p class="lead">Same agent code. One swapped string.</p>
+
+      <div class="grid-2">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--bad);"></span>
+            <strong style="font-size:14px;">Before — real key in the agent's env</strong>
+          </div>
+<pre><code>const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  //      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // Visible to: every tool call, every
+  // MCP server, every stack trace, every
+  // log line. Lifetime: forever, until
+  // you remember to rotate it.
+});</code></pre>
+        </div>
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--good);"></span>
+            <strong style="font-size:14px;">After — disposable token via Tessera</strong>
+          </div>
+<pre><code>const openai = new OpenAI({
+  apiKey: process.env.PXY_TOKEN,
+  baseURL: "http://127.0.0.1:8080/u/openai",
+  // Token is bound to:
+  //   one upstream (openai)
+  //   one Rego policy (chat-only)
+  //   1 hour TTL
+  // Revoke anytime from the desktop UI.
+});</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="scenarios">
+      <span class="pill">use cases</span>
+      <h2>What you actually do with it.</h2>
+      <p class="lead">Three things devs build with Tessera on day one.</p>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Give Claude read-only GitHub access</h3>
+          <p style="margin-bottom: 10px;">Hand Claude Code a 30-minute token that can only <code>GET</code> issues on one repo. Even if a prompt tells it to delete a branch, the policy denies the request before the proxy ever resolves your PAT.</p>
+          <p style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--accent);">policy: github-readonly · ttl: 30min</p>
+        </div>
+        <div class="card">
+          <h3>Sandbox an MCP server</h3>
+          <p style="margin-bottom: 10px;">An MCP server you didn't write needs your OpenAI key. Don't paste it. Mint a token scoped to <code>/v1/chat/completions</code>, hand <em>that</em> to the MCP server. If it tries to hit the embeddings endpoint or fine-tune API, audit log records the deny.</p>
+          <p style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--accent);">policy: chat-only · ttl: 8h</p>
+        </div>
+        <div class="card">
+          <h3>One-button revocation</h3>
+          <p style="margin-bottom: 10px;">Agent left running over the weekend? Click "Revoke" in the desktop UI. Every child token it minted dies cascade-style on the next request. No upstream key rotation, no SaaS dashboard, no waiting.</p>
+          <p style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--accent);">latency: instant · scope: all children</p>
+        </div>
+      </div>
+    </section>
+
     <section id="how">
-      <span class="pill">data flow</span>
-      <h2>Where the secrets live, and where they don't.</h2>
+      <span class="pill">how it works</span>
+      <h2>The agent never sees a real key.</h2>
       <p class="lead">
-        Agents never see real upstream credentials. The subtoken they carry is meaningless outside the proxy.
-        Below: a request from agent to upstream, with every guard in red.
+        Agent sends its <code>pxy_…</code> token. Tessera validates, runs the policy, looks up the real
+        credential live from your password manager, swaps the header, forwards. Guards in red.
       </p>
 
       <div class="diagram">
