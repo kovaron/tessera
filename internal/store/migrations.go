@@ -32,7 +32,6 @@ CREATE TABLE IF NOT EXISTS policies (
   name TEXT NOT NULL DEFAULT '',
   upstream_id TEXT REFERENCES upstreams(id)
 );
-CREATE INDEX IF NOT EXISTS idx_policies_upstream ON policies(upstream_id);
 
 CREATE TABLE IF NOT EXISTS upstreams (
   id TEXT PRIMARY KEY,
@@ -54,7 +53,11 @@ func (s *sqliteStore) Migrate(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, schema); err != nil {
 		return err
 	}
-	return s.addPolicyColumns(ctx)
+	if err := s.addPolicyColumns(ctx); err != nil {
+		return err
+	}
+	_, err := s.db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_policies_upstream ON policies(upstream_id)`)
+	return err
 }
 
 // addPolicyColumns brings pre-existing policies tables up to the new schema.
