@@ -3,6 +3,7 @@ import { useTokens, useRevokeToken } from "@/hooks/useTokens";
 import { Button } from "@/components/ui/button";
 import MintTokenModal from "@/components/MintTokenModal";
 import AttenuateModal from "@/components/AttenuateModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import type { Token } from "@/types/bindings";
 
 interface Node { tok: Token; children: Node[] }
@@ -43,6 +44,7 @@ export default function Tokens() {
   const revoke = useRevokeToken();
   const [mintOpen, setMintOpen] = useState(false);
   const [attOpen, setAttOpen] = useState(false);
+  const [toRevoke, setToRevoke] = useState<string | null>(null);
 
   return (
     <div className="p-6 space-y-4">
@@ -58,13 +60,27 @@ export default function Tokens() {
           <tr className="text-left text-muted-foreground"><th>Label</th><th>Upstream</th><th>Expires</th><th></th></tr>
         </thead>
         <tbody>
-          {tree.map((n) => <Row key={n.tok.ID} node={n} depth={0} onRevoke={(id) => {
-            if (confirm("Revoke this token and all its children?")) revoke.mutate(id);
-          }} />)}
+          {tree.map((n) => <Row key={n.tok.ID} node={n} depth={0} onRevoke={(id) => setToRevoke(id)} />)}
         </tbody>
       </table>
+      {revoke.isError && (
+        <p className="text-xs text-red-500 break-all">revoke failed: {String(revoke.error)}</p>
+      )}
       <MintTokenModal open={mintOpen} onClose={() => setMintOpen(false)} />
       <AttenuateModal open={attOpen} onClose={() => setAttOpen(false)} />
+      <ConfirmDialog
+        open={toRevoke !== null}
+        title="Revoke token?"
+        description="Revokes this token and every child it has minted. Cannot be undone."
+        confirmLabel="Revoke"
+        destructive
+        onConfirm={() => {
+          const id = toRevoke!;
+          setToRevoke(null);
+          revoke.mutate(id);
+        }}
+        onCancel={() => setToRevoke(null)}
+      />
     </div>
   );
 }

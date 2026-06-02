@@ -49,6 +49,16 @@ func (s *sqliteStore) ListUpstreams(ctx context.Context) ([]Upstream, error) {
 }
 
 func (s *sqliteStore) DeleteUpstream(ctx context.Context, id string) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM upstreams WHERE id=?`, id)
-	return err
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `UPDATE policies SET upstream_id=NULL WHERE upstream_id=?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM upstreams WHERE id=?`, id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

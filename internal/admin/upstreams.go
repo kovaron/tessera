@@ -60,6 +60,9 @@ func (h *Handlers) upstreamsByID(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
+		if h.reg != nil {
+			h.reg.Delete(id)
+		}
 		w.WriteHeader(204)
 		return
 	}

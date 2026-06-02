@@ -27,6 +27,12 @@ func (r *Registry) Set(u Upstream) {
 	r.m[u.ID] = u
 }
 
+func (r *Registry) Delete(id string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.m, id)
+}
+
 func (r *Registry) Get(id string) (Upstream, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import InjectRuleBuilder from "@/components/InjectRuleBuilder";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import type { InjectRule, UpsertUpstreamReq, Upstream } from "@/types/bindings";
 
 const emptyInject: InjectRule = { type: "bearer", secret_ref: "" };
@@ -58,6 +59,7 @@ export default function Upstreams() {
   const del = useDeleteUpstream();
   const [editing, setEditing] = useState<UpsertUpstreamReq | null>(null);
   const [isEdit, setIsEdit] = useState(false);
+  const [toDelete, setToDelete] = useState<string | null>(null);
 
   const openAdd = () => {
     setIsEdit(false);
@@ -153,7 +155,7 @@ export default function Upstreams() {
                 <td className="px-3 py-2">
                   <div className="flex justify-end gap-2 whitespace-nowrap">
                     <Button size="sm" variant="outline" className="h-7 px-3" onClick={() => openEdit(u)}>Edit</Button>
-                    <Button size="sm" variant="outline" className="h-7 px-3 border-red-500/30 text-red-500 hover:bg-red-500/10" onClick={() => del.mutate(u.ID)}>Delete</Button>
+                    <Button size="sm" variant="outline" className="h-7 px-3 border-red-500/30 text-red-500 hover:bg-red-500/10" onClick={() => setToDelete(u.ID)}>Delete</Button>
                   </div>
                 </td>
               </tr>
@@ -162,7 +164,25 @@ export default function Upstreams() {
         </table>
       </div>
 
+      {del.isError && (
+        <p className="text-xs text-red-500 break-all">delete failed: {String(del.error)}</p>
+      )}
+
       <p className="text-xs text-muted-foreground">{data.length} upstream(s)</p>
+
+      <ConfirmDialog
+        open={toDelete !== null}
+        title={`Delete upstream ${toDelete ?? ""}?`}
+        description="Policies scoped to this upstream become global. Existing tokens for it become inert (proxy returns 'unknown_upstream')."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          const id = toDelete!;
+          setToDelete(null);
+          del.mutate(id);
+        }}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   );
 }
