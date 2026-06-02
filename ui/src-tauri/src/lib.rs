@@ -38,8 +38,10 @@ pub fn run() {
             commands::bootstrap::detect_state,
             commands::bootstrap::run_bootstrap,
             keychain::keychain_save,
+            keychain::keychain_save_with_biometry,
             keychain::keychain_load,
             keychain::keychain_delete,
+            keychain::biometry_available,
             clipboard::clipboard_set_with_clear,
         ])
         .setup(|app| {

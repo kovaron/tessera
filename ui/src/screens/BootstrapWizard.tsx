@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/invoke";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,18 @@ export default function BootstrapWizard({ onDone }: Props) {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [save, setSave] = useState(false);
+  const [useBiometry, setUseBiometry] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.biometryAvailable().then(setBioAvailable).catch(() => setBioAvailable(false));
+  }, []);
+
+  // useBiometry only meaningful when save is on
+  useEffect(() => {
+    if (!save) setUseBiometry(false);
+  }, [save]);
 
   const submit = async () => {
     if (pw !== pw2) { setErr("Passphrases do not match"); return; }
@@ -21,7 +32,13 @@ export default function BootstrapWizard({ onDone }: Props) {
     setStep("running");
     try {
       await api.runBootstrap(pw, null);
-      if (save) await api.keychainSave(pw);
+      if (save) {
+        if (useBiometry && bioAvailable) {
+          await api.keychainSaveWithBiometry(pw);
+        } else {
+          await api.keychainSave(pw);
+        }
+      }
       setStep("done");
     } catch (e: any) {
       setErr(String(e));
@@ -49,10 +66,22 @@ export default function BootstrapWizard({ onDone }: Props) {
             <div><Label>Passphrase (min 12 chars)</Label><Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>
             <div><Label>Confirm</Label><Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="kc">Store in Keychain</Label>
+              <div>
+                <Label htmlFor="kc">Store in Keychain</Label>
+                <p className="text-xs text-muted-foreground">Skip typing passphrase on every unlock.</p>
+              </div>
               <Switch id="kc" checked={save} onCheckedChange={setSave} />
             </div>
-            {err && <p className="text-xs text-red-500">{err}</p>}
+            {save && bioAvailable && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="bio">Require Touch ID to unlock</Label>
+                  <p className="text-xs text-muted-foreground">Touch ID or device password gates the Keychain read.</p>
+                </div>
+                <Switch id="bio" checked={useBiometry} onCheckedChange={setUseBiometry} />
+              </div>
+            )}
+            {err && <p className="text-xs text-red-500 break-all">{err}</p>}
             <Button onClick={submit}>Bootstrap</Button>
           </>
         )}

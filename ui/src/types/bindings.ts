@@ -115,8 +115,10 @@ export const commands = {
     invoke("run_bootstrap", { passphrase, dbPath: db_path }),
 
   keychainSave: (passphrase: string): Promise<void> => invoke("keychain_save", { passphrase }),
+  keychainSaveWithBiometry: (passphrase: string): Promise<void> => invoke("keychain_save_with_biometry", { passphrase }),
   keychainLoad: (): Promise<string | null> => invoke("keychain_load"),
   keychainDelete: (): Promise<void> => invoke("keychain_delete"),
+  biometryAvailable: (): Promise<boolean> => invoke("biometry_available"),
 
   clipboardSetWithClear: (value: string, clear_after_seconds: number): Promise<void> =>
     invoke("clipboard_set_with_clear", { value, clearAfterSeconds: clear_after_seconds }),

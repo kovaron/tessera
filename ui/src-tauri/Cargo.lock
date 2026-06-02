@@ -3818,6 +3818,8 @@ dependencies = [
 name = "tessera-ui"
 version = "0.1.0"
 dependencies = [
+ "core-foundation",
+ "core-foundation-sys",
  "dirs 5.0.1",
  "http-body-util",
  "hyper",
@@ -3825,6 +3827,7 @@ dependencies = [
  "hyperlocal",
  "notify",
  "security-framework",
+ "security-framework-sys",
  "serde",
  "serde_json",
  "specta",
