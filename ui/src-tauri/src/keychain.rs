@@ -13,7 +13,7 @@ use security_framework_sys::access_control::{
 use security_framework_sys::base::{errSecItemNotFound, errSecSuccess, SecAccessControlRef};
 use security_framework_sys::item::{
     kSecAttrAccessControl, kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword,
-    kSecReturnData, kSecUseDataProtectionKeychain, kSecValueData,
+    kSecReturnData, kSecValueData,
 };
 use security_framework_sys::keychain_item::{SecItemAdd, SecItemCopyMatching, SecItemDelete};
 use std::ptr;
@@ -77,10 +77,6 @@ fn delete_existing() {
         &unsafe { CFString::wrap_under_get_rule(kSecAttrAccount) }.as_CFType(),
         &account.as_CFType(),
     );
-    q.add(
-        &unsafe { CFString::wrap_under_get_rule(kSecUseDataProtectionKeychain) }.as_CFType(),
-        &CFBoolean::true_value().as_CFType(),
-    );
     unsafe {
         SecItemDelete(q.as_concrete_TypeRef() as _);
     }
@@ -124,10 +120,6 @@ fn save_internal(passphrase: &str, ac: Option<&AccessControl>) -> Result<(), App
         &unsafe { CFString::wrap_under_get_rule(kSecValueData) }.as_CFType(),
         &data.as_CFType(),
     );
-    q.add(
-        &unsafe { CFString::wrap_under_get_rule(kSecUseDataProtectionKeychain) }.as_CFType(),
-        &CFBoolean::true_value().as_CFType(),
-    );
     if let Some(ac) = ac {
         q.add(
             &unsafe { CFString::wrap_under_get_rule(kSecAttrAccessControl) }.as_CFType(),
@@ -164,10 +156,6 @@ pub fn keychain_load() -> Result<Option<String>, AppError> {
     );
     q.add(
         &unsafe { CFString::wrap_under_get_rule(kSecReturnData) }.as_CFType(),
-        &CFBoolean::true_value().as_CFType(),
-    );
-    q.add(
-        &unsafe { CFString::wrap_under_get_rule(kSecUseDataProtectionKeychain) }.as_CFType(),
         &CFBoolean::true_value().as_CFType(),
     );
 
