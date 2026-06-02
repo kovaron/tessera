@@ -33,7 +33,7 @@ export default function Unlock() {
       console.log("[bio] <- keychainLoad returned", typeof pass, pass === null ? "null" : pass === undefined ? "undefined" : `${pass.length} chars`);
       setBioStep(pass ? `loaded ${pass.length}-char passphrase, unlocking…` : "keychain returned null");
       if (!pass) {
-        setBioError("No passphrase stored, or stored without biometry. Re-bootstrap with both 'Store in Keychain' and 'Require Touch ID' toggled on.");
+        setBioError("No biometry-protected passphrase stored yet. Enter it once below, flip 'Save with Touch ID for next time', click Unlock.");
         return;
       }
       unlock.mutate(pass, {
