@@ -28,12 +28,21 @@ export default function Unlock() {
     setBioStep("calling keychain…");
     setBioInFlight(true);
     try {
+      setBioStep("waiting for Touch ID…");
+      console.log("[bio] -> biometryAuthenticate()");
+      const ok = await api.biometryAuthenticate("Unlock Tessera");
+      console.log("[bio] <- biometryAuthenticate", ok);
+      if (!ok) {
+        setBioError("Touch ID was not approved.");
+        return;
+      }
+      setBioStep("reading keychain…");
       console.log("[bio] -> keychainLoad()");
       const pass = await api.keychainLoad();
       console.log("[bio] <- keychainLoad returned", typeof pass, pass === null ? "null" : pass === undefined ? "undefined" : `${pass.length} chars`);
       setBioStep(pass ? `loaded ${pass.length}-char passphrase, unlocking…` : "keychain returned null");
       if (!pass) {
-        setBioError("No biometry-protected passphrase stored yet. Enter it once below, flip 'Save with Touch ID for next time', click Unlock.");
+        setBioError("No passphrase stored. Enter it once below, flip 'Save with Touch ID for next time', click Unlock.");
         return;
       }
       unlock.mutate(pass, {

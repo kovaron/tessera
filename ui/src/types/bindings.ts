@@ -119,6 +119,7 @@ export const commands = {
   keychainLoad: (): Promise<string | null> => invoke("keychain_load"),
   keychainDelete: (): Promise<void> => invoke("keychain_delete"),
   biometryAvailable: (): Promise<boolean> => invoke("biometry_available"),
+  biometryAuthenticate: (reason: string): Promise<boolean> => invoke("biometry_authenticate", { reason }),
 
   clipboardSetWithClear: (value: string, clear_after_seconds: number): Promise<void> =>
     invoke("clipboard_set_with_clear", { value, clearAfterSeconds: clear_after_seconds }),

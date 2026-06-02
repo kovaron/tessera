@@ -42,6 +42,7 @@ pub fn run() {
             keychain::keychain_load,
             keychain::keychain_delete,
             keychain::biometry_available,
+            keychain::biometry_authenticate,
             clipboard::clipboard_set_with_clear,
         ])
         .setup(|app| {
