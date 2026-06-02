@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useUnlock } from "@/hooks/useStatus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { api } from "@/lib/invoke";
 import logo from "@/assets/logo.png";
 
@@ -11,6 +13,7 @@ export default function Unlock() {
   const [bioError, setBioError] = useState<string | null>(null);
   const [bioStep, setBioStep] = useState<string>("");
   const [bioInFlight, setBioInFlight] = useState(false);
+  const [saveBio, setSaveBio] = useState(false);
   const unlock = useUnlock();
 
   useEffect(() => {
@@ -51,7 +54,13 @@ export default function Unlock() {
         className="flex flex-col gap-3 w-80 items-stretch"
         onSubmit={(e) => {
           e.preventDefault();
-          unlock.mutate(pw);
+          unlock.mutate(pw, {
+            onSuccess: async () => {
+              if (saveBio && bioAvailable) {
+                try { await api.keychainSaveWithBiometry(pw); } catch (err) { console.error("[bio] save failed", err); }
+              }
+            },
+          });
         }}
       >
         <img src={logo} alt="" className="w-20 h-20 rounded-2xl self-center mb-2" />
@@ -80,6 +89,12 @@ export default function Unlock() {
           value={pw}
           onChange={(e) => setPw(e.target.value)}
         />
+        {bioAvailable && (
+          <div className="flex items-center justify-between">
+            <Label htmlFor="bio-save" className="text-xs">Save with Touch ID for next time</Label>
+            <Switch id="bio-save" checked={saveBio} onCheckedChange={setSaveBio} />
+          </div>
+        )}
         <Button type="submit" disabled={!pw || unlock.isPending}>
           {unlock.isPending ? "Unlocking…" : "Unlock"}
         </Button>
