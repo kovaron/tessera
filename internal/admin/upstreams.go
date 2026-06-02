@@ -47,6 +47,9 @@ func (h *Handlers) upstreamsRoot(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
+		if list == nil {
+			list = []store.Upstream{}
+		}
 		writeJSON(w, 200, list)
 	default:
 		w.WriteHeader(405)
