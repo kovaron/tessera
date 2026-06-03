@@ -30,6 +30,9 @@ type Store interface {
 
 	GetKeystore(ctx context.Context) (*Keystore, error)
 	PutKeystore(ctx context.Context, k Keystore) error
+
+	GetCA(ctx context.Context) (*CA, error)
+	PutCA(ctx context.Context, c CA) error
 }
 
 type Token struct {
@@ -62,6 +65,14 @@ type Upstream struct {
 	BaseURL    string
 	InjectJSON json.RawMessage
 	CreatedAt  int64
+}
+
+type CA struct {
+	CertCT    []byte
+	CertNonce []byte
+	KeyCT     []byte
+	KeyNonce  []byte
+	CreatedAt int64
 }
 
 type Keystore struct {

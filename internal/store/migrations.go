@@ -47,6 +47,15 @@ CREATE TABLE IF NOT EXISTS keystore (
   kdf_params BLOB,
   created_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS keystore_ca (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  cert_pem_ct    BLOB NOT NULL,
+  cert_pem_nonce BLOB NOT NULL,
+  key_pem_ct     BLOB NOT NULL,
+  key_pem_nonce  BLOB NOT NULL,
+  created_at INTEGER NOT NULL
+);
 `
 
 func (s *sqliteStore) Migrate(ctx context.Context) error {
