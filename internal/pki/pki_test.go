@@ -24,6 +24,15 @@ func TestGenerate(t *testing.T) {
 	if ca.Cert.KeyUsage&x509.KeyUsageCertSign == 0 {
 		t.Fatal("CertSign missing")
 	}
+	if ca.Cert.KeyUsage&x509.KeyUsageDigitalSignature == 0 {
+		t.Fatal("DigitalSignature missing")
+	}
+	if ca.Cert.MaxPathLen != 0 {
+		t.Fatalf("MaxPathLen: %d", ca.Cert.MaxPathLen)
+	}
+	if !ca.Cert.BasicConstraintsValid {
+		t.Fatal("BasicConstraintsValid false")
+	}
 }
 
 func TestWrapUnwrapWithDEK(t *testing.T) {
@@ -54,8 +63,14 @@ func TestWrapUnwrapWithDEK(t *testing.T) {
 func TestUnwrapWithWrongDEK(t *testing.T) {
 	dek := bytes.Repeat([]byte{0xAB}, 32)
 	bad := bytes.Repeat([]byte{0xCD}, 32)
-	ca, _ := Generate("Tessera CA")
-	wrap, _ := ca.WrapWithDEK(dek)
+	ca, err := Generate("Tessera CA")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrap, err := ca.WrapWithDEK(dek)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := UnwrapWithDEK(bad, &wrap); err == nil {
 		t.Fatal("expected error with wrong DEK")
 	}

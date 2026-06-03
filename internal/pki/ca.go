@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"math/big"
 	"time"
 
@@ -38,7 +39,8 @@ func Generate(commonName string) (*CA, error) {
 		NotAfter:     now.AddDate(10, 0, 0),
 		IsCA:         true,
 		KeyUsage:     x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
-		MaxPathLen:   0,
+		MaxPathLen:     0,
+		MaxPathLenZero: true,
 		BasicConstraintsValid: true,
 	}
 
@@ -99,12 +101,18 @@ func UnwrapWithDEK(dek []byte, w *store.CA) (*CA, error) {
 	}
 
 	certBlock, _ := pem.Decode(certPEM)
+	if certBlock == nil {
+		return nil, errors.New("pki: invalid cert PEM")
+	}
 	cert, err := x509.ParseCertificate(certBlock.Bytes)
 	if err != nil {
 		return nil, err
 	}
 
 	keyBlock, _ := pem.Decode(keyPEM)
+	if keyBlock == nil {
+		return nil, errors.New("pki: invalid key PEM")
+	}
 	key, err := x509.ParseECPrivateKey(keyBlock.Bytes)
 	if err != nil {
 		return nil, err
