@@ -64,6 +64,7 @@ type Upstream struct {
 	ID         string
 	BaseURL    string
 	InjectJSON json.RawMessage
+	Hostnames  []string
 	CreatedAt  int64
 }
 

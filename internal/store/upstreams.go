@@ -3,22 +3,42 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 )
 
+func hostnamesJSON(h []string) string {
+	if h == nil {
+		return "[]"
+	}
+	b, _ := json.Marshal(h)
+	return string(b)
+}
+
+func parseHostnames(s string) ([]string, error) {
+	if s == "" {
+		return []string{}, nil
+	}
+	var out []string
+	if err := json.Unmarshal([]byte(s), &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (s *sqliteStore) UpsertUpstream(ctx context.Context, u Upstream) error {
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO upstreams(id, base_url, inject, created_at) VALUES (?,?,?,?)
-         ON CONFLICT(id) DO UPDATE SET base_url=excluded.base_url, inject=excluded.inject`,
-		u.ID, u.BaseURL, string(u.InjectJSON), u.CreatedAt)
+		`INSERT INTO upstreams(id, base_url, inject, hostnames, created_at) VALUES (?,?,?,?,?)
+         ON CONFLICT(id) DO UPDATE SET base_url=excluded.base_url, inject=excluded.inject, hostnames=excluded.hostnames`,
+		u.ID, u.BaseURL, string(u.InjectJSON), hostnamesJSON(u.Hostnames), u.CreatedAt)
 	return err
 }
 
 func (s *sqliteStore) GetUpstream(ctx context.Context, id string) (*Upstream, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT id, base_url, inject, created_at FROM upstreams WHERE id=?`, id)
+	row := s.db.QueryRowContext(ctx, `SELECT id, base_url, inject, hostnames, created_at FROM upstreams WHERE id=?`, id)
 	var u Upstream
-	var inject string
-	err := row.Scan(&u.ID, &u.BaseURL, &inject, &u.CreatedAt)
+	var inject, hostnames string
+	err := row.Scan(&u.ID, &u.BaseURL, &inject, &hostnames, &u.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -26,11 +46,16 @@ func (s *sqliteStore) GetUpstream(ctx context.Context, id string) (*Upstream, er
 		return nil, err
 	}
 	u.InjectJSON = []byte(inject)
+	h, err := parseHostnames(hostnames)
+	if err != nil {
+		return nil, err
+	}
+	u.Hostnames = h
 	return &u, nil
 }
 
 func (s *sqliteStore) ListUpstreams(ctx context.Context) ([]Upstream, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, base_url, inject, created_at FROM upstreams ORDER BY id`)
+	rows, err := s.db.QueryContext(ctx, `SELECT id, base_url, inject, hostnames, created_at FROM upstreams ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -38,11 +63,16 @@ func (s *sqliteStore) ListUpstreams(ctx context.Context) ([]Upstream, error) {
 	var out []Upstream
 	for rows.Next() {
 		var u Upstream
-		var inject string
-		if err := rows.Scan(&u.ID, &u.BaseURL, &inject, &u.CreatedAt); err != nil {
+		var inject, hostnames string
+		if err := rows.Scan(&u.ID, &u.BaseURL, &inject, &hostnames, &u.CreatedAt); err != nil {
 			return nil, err
 		}
 		u.InjectJSON = []byte(inject)
+		h, err := parseHostnames(hostnames)
+		if err != nil {
+			return nil, err
+		}
+		u.Hostnames = h
 		out = append(out, u)
 	}
 	return out, rows.Err()
