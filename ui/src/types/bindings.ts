@@ -8,6 +8,7 @@ export type Upstream = {
   ID: string;
   BaseURL: string;
   InjectJSON: unknown;
+  Hostnames: string[];
   CreatedAt: number;
 };
 
@@ -22,6 +23,7 @@ export type UpsertUpstreamReq = {
   id: string;
   base_url: string;
   inject: InjectRule;
+  hostnames: string[];
 };
 
 export type Token = {

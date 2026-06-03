@@ -19,15 +19,16 @@ func (h *Handlers) upstreamsRoot(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		var body struct {
-			ID      string          `json:"id"`
-			BaseURL string          `json:"base_url"`
-			Inject  json.RawMessage `json:"inject"`
+			ID        string          `json:"id"`
+			BaseURL   string          `json:"base_url"`
+			Inject    json.RawMessage `json:"inject"`
+			Hostnames []string        `json:"hostnames"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, "bad json", 400)
 			return
 		}
-		u := store.Upstream{ID: body.ID, BaseURL: body.BaseURL, InjectJSON: []byte(body.Inject), CreatedAt: time.Now().Unix()}
+		u := store.Upstream{ID: body.ID, BaseURL: body.BaseURL, InjectJSON: []byte(body.Inject), Hostnames: body.Hostnames, CreatedAt: time.Now().Unix()}
 		if err := h.st.store.UpsertUpstream(r.Context(), u); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -38,7 +39,7 @@ func (h *Handlers) upstreamsRoot(w http.ResponseWriter, r *http.Request) {
 			if len(body.Inject) > 0 {
 				_ = json.Unmarshal(body.Inject, &rule)
 			}
-			h.reg.Set(upstreams.Upstream{ID: body.ID, BaseURL: body.BaseURL, Inject: rule})
+			h.reg.Set(upstreams.Upstream{ID: body.ID, BaseURL: body.BaseURL, Inject: rule, Hostnames: body.Hostnames})
 		}
 		writeJSON(w, 201, u)
 	case "GET":

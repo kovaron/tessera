@@ -17,6 +17,8 @@ pub struct Upstream {
     pub base_url: String,
     #[serde(rename = "InjectJSON")]
     pub inject_json: serde_json::Value,
+    #[serde(rename = "Hostnames", default)]
+    pub hostnames: Vec<String>,
     #[serde(rename = "CreatedAt")]
     pub created_at: i64,
 }
@@ -38,6 +40,8 @@ pub struct UpsertUpstreamReq {
     pub id: String,
     pub base_url: String,
     pub inject: InjectRule,
+    #[serde(default)]
+    pub hostnames: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Type, Debug, Clone)]

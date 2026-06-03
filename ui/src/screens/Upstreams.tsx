@@ -63,7 +63,7 @@ export default function Upstreams() {
 
   const openAdd = () => {
     setIsEdit(false);
-    setEditing({ id: "", base_url: "", inject: { ...emptyInject } });
+    setEditing({ id: "", base_url: "", inject: { ...emptyInject }, hostnames: [] });
   };
 
   const openEdit = (u: Upstream) => {
@@ -72,6 +72,7 @@ export default function Upstreams() {
       id: u.ID,
       base_url: u.BaseURL,
       inject: toInjectRule(u.InjectJSON),
+      hostnames: u.Hostnames ?? [],
     });
   };
 
@@ -104,6 +105,20 @@ export default function Upstreams() {
                 <Label>Base URL</Label>
                 <Input value={editing.base_url} onChange={(e) => setEditing({ ...editing, base_url: e.target.value })} />
               </div>
+              <div>
+                <Label>Hostnames</Label>
+                <Input
+                  value={editing.hostnames?.join(", ") ?? ""}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      hostnames: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                    })
+                  }
+                  placeholder="api.example.com, other.example.com"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Comma-separated. Used by <code>tessera-cli exec</code> to map traffic back to this upstream.</p>
+              </div>
               <InjectRuleBuilder value={editing.inject} onChange={(inject) => setEditing({ ...editing, inject })} />
               <Button
                 disabled={upsert.isPending || !editing.id || !editing.base_url}
@@ -126,15 +141,17 @@ export default function Upstreams() {
       <div className="rounded-md border overflow-hidden">
         <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
           <colgroup>
-            <col style={{ width: "14%" }} />
-            <col style={{ width: "32%" }} />
-            <col style={{ width: "34%" }} />
-            <col style={{ width: "20%", minWidth: "180px" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "26%" }} />
+            <col style={{ width: "24%" }} />
+            <col style={{ width: "22%" }} />
+            <col style={{ width: "16%", minWidth: "180px" }} />
           </colgroup>
           <thead className="bg-muted/40">
             <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-3 py-2">ID</th>
               <th className="px-3 py-2">Base URL</th>
+              <th className="px-3 py-2">Hostnames</th>
               <th className="px-3 py-2">Inject</th>
               <th className="px-3 py-2"></th>
             </tr>
@@ -142,7 +159,7 @@ export default function Upstreams() {
           <tbody>
             {data.length === 0 && (
               <tr>
-                <td className="px-3 py-6 text-center text-muted-foreground" colSpan={4}>
+                <td className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
                   No upstreams yet. Click <em>Add upstream</em>.
                 </td>
               </tr>
@@ -151,6 +168,7 @@ export default function Upstreams() {
               <tr key={u.ID} className="border-t hover:bg-muted/30">
                 <td className="px-3 py-2 font-mono text-xs truncate" title={u.ID}>{u.ID}</td>
                 <td className="px-3 py-2 font-mono text-xs truncate" title={u.BaseURL}>{u.BaseURL}</td>
+                <td className="px-3 py-2 font-mono text-xs truncate" title={(u.Hostnames ?? []).join(", ")}>{(u.Hostnames ?? []).join(", ")}</td>
                 <td className="px-3 py-2"><InjectCell raw={u.InjectJSON} /></td>
                 <td className="px-3 py-2">
                   <div className="flex justify-end gap-2 whitespace-nowrap">
