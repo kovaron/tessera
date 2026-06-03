@@ -7,12 +7,15 @@ import (
 	"errors"
 )
 
-func hostnamesJSON(h []string) string {
+func hostnamesJSON(h []string) (string, error) {
 	if h == nil {
-		return "[]"
+		return "[]", nil
 	}
-	b, _ := json.Marshal(h)
-	return string(b)
+	b, err := json.Marshal(h)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 func parseHostnames(s string) ([]string, error) {
@@ -27,10 +30,14 @@ func parseHostnames(s string) ([]string, error) {
 }
 
 func (s *sqliteStore) UpsertUpstream(ctx context.Context, u Upstream) error {
-	_, err := s.db.ExecContext(ctx,
+	hj, err := hostnamesJSON(u.Hostnames)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.ExecContext(ctx,
 		`INSERT INTO upstreams(id, base_url, inject, hostnames, created_at) VALUES (?,?,?,?,?)
          ON CONFLICT(id) DO UPDATE SET base_url=excluded.base_url, inject=excluded.inject, hostnames=excluded.hostnames`,
-		u.ID, u.BaseURL, string(u.InjectJSON), hostnamesJSON(u.Hostnames), u.CreatedAt)
+		u.ID, u.BaseURL, string(u.InjectJSON), hj, u.CreatedAt)
 	return err
 }
 
