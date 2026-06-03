@@ -47,8 +47,10 @@ func (f *LeafFactory) LeafFor(host string) (*tls.Certificate, error) {
 		DNSNames:     []string{host},
 		NotBefore:    now.Add(-time.Minute),
 		NotAfter:     now.AddDate(0, 0, 30),
-		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  false,
 	}
 
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, f.ca.Cert, &key.PublicKey, f.ca.Key)
@@ -68,6 +70,10 @@ func (f *LeafFactory) LeafFor(host string) (*tls.Certificate, error) {
 	}
 
 	f.mu.Lock()
+	if existing, ok := f.cache[host]; ok && time.Until(existing.Leaf.NotAfter) >= 24*time.Hour {
+		f.mu.Unlock()
+		return existing, nil
+	}
 	f.cache[host] = cert
 	f.mu.Unlock()
 

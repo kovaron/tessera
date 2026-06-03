@@ -108,7 +108,10 @@ func TestLeafFor_SANAndChain(t *testing.T) {
 }
 
 func TestLeafFor_Cache(t *testing.T) {
-	ca, _ := Generate("Tessera CA")
+	ca, err := Generate("Tessera CA")
+	if err != nil {
+		t.Fatal(err)
+	}
 	f := NewLeafFactory(ca)
 	a, err := f.LeafFor("api.openai.com")
 	if err != nil {
@@ -124,10 +127,19 @@ func TestLeafFor_Cache(t *testing.T) {
 }
 
 func TestLeafFor_DifferentHosts(t *testing.T) {
-	ca, _ := Generate("Tessera CA")
+	ca, err := Generate("Tessera CA")
+	if err != nil {
+		t.Fatal(err)
+	}
 	f := NewLeafFactory(ca)
-	a, _ := f.LeafFor("a.test")
-	b, _ := f.LeafFor("b.test")
+	a, err := f.LeafFor("a.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := f.LeafFor("b.test")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if a == b {
 		t.Fatal("expected different certs for different hosts")
 	}
@@ -137,7 +149,10 @@ func TestLeafFor_DifferentHosts(t *testing.T) {
 }
 
 func TestGetCertificate(t *testing.T) {
-	ca, _ := Generate("Tessera CA")
+	ca, err := Generate("Tessera CA")
+	if err != nil {
+		t.Fatal(err)
+	}
 	f := NewLeafFactory(ca)
 	cert, err := f.GetCertificate(&tls.ClientHelloInfo{ServerName: "api.openai.com"})
 	if err != nil {
@@ -145,5 +160,27 @@ func TestGetCertificate(t *testing.T) {
 	}
 	if cert.Leaf.DNSNames[0] != "api.openai.com" {
 		t.Fatal("SAN")
+	}
+}
+
+func TestLeafFor_RefreshNearExpiry(t *testing.T) {
+	ca, err := Generate("Tessera CA")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := NewLeafFactory(ca)
+	stale := &tls.Certificate{
+		Leaf: &x509.Certificate{
+			NotAfter: time.Now().Add(1 * time.Hour),
+		},
+	}
+	f.cache["refresh.test"] = stale
+
+	got, err := f.LeafFor("refresh.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == stale {
+		t.Fatal("expected stale cert to be replaced")
 	}
 }
