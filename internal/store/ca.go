@@ -27,8 +27,7 @@ func (s *sqliteStore) PutCA(ctx context.Context, c CA) error {
            cert_pem_ct=excluded.cert_pem_ct,
            cert_pem_nonce=excluded.cert_pem_nonce,
            key_pem_ct=excluded.key_pem_ct,
-           key_pem_nonce=excluded.key_pem_nonce,
-           created_at=excluded.created_at`,
+           key_pem_nonce=excluded.key_pem_nonce`,
 		c.CertCT, c.CertNonce, c.KeyCT, c.KeyNonce, c.CreatedAt)
 	return err
 }

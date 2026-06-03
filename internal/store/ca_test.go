@@ -30,8 +30,20 @@ func TestCARoundTrip(t *testing.T) {
 	if err := s.PutCA(ctx, in2); err != nil {
 		t.Fatal(err)
 	}
-	got2, _ := s.GetCA(ctx)
+	got2, err := s.GetCA(ctx)
+	if err != nil || got2 == nil {
+		t.Fatal(err, got2)
+	}
 	if !bytes.Equal(got2.CertCT, []byte("ct2")) {
 		t.Fatal("upsert failed")
+	}
+}
+
+func TestGetCA_EmptyStore(t *testing.T) {
+	s := mustOpen(t)
+	defer s.Close()
+	got, err := s.GetCA(context.Background())
+	if err != nil || got != nil {
+		t.Fatalf("expected nil CA on empty store, got %v %v", got, err)
 	}
 }
