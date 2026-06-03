@@ -81,23 +81,22 @@ func (r *Registry) HydrateFromStore(ctx context.Context, s store.Store) error {
 	if err != nil {
 		return err
 	}
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	next := make(map[string]Upstream, len(list))
+	nextHost := map[string]string{}
 	for _, row := range list {
 		var rule InjectRule
 		if err := json.Unmarshal(row.InjectJSON, &rule); err != nil {
 			return err
 		}
-		u := Upstream{
-			ID:        row.ID,
-			BaseURL:   row.BaseURL,
-			Inject:    rule,
-			Hostnames: row.Hostnames,
-		}
-		r.m[row.ID] = u
+		u := Upstream{ID: row.ID, BaseURL: row.BaseURL, Inject: rule, Hostnames: row.Hostnames}
+		next[row.ID] = u
 		for _, h := range u.Hostnames {
-			r.byHost[h] = u.ID
+			nextHost[h] = u.ID
 		}
 	}
+	r.mu.Lock()
+	r.m = next
+	r.byHost = nextHost
+	r.mu.Unlock()
 	return nil
 }
