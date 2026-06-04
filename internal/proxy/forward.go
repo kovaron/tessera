@@ -115,7 +115,9 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 		return
 	}
 
-	// Acknowledge the tunnel.
+	// Acknowledge the tunnel. Set deadline before writing so a client that drops
+	// here (between 200 and ClientHello) doesn't stall indefinitely.
+	c.SetDeadline(time.Now().Add(30 * time.Second))
 	if _, err := fmt.Fprintf(c, "HTTP/1.1 200 Connection established\r\n\r\n"); err != nil {
 		return
 	}
@@ -129,7 +131,6 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 	}
 	tlsConn := tls.Server(c, tlsCfg)
 	defer tlsConn.Close() // idempotent with trackedConn.Close(); releases TLS resources
-	tlsConn.SetDeadline(time.Now().Add(30 * time.Second))
 	if err := tlsConn.Handshake(); err != nil {
 		// Client stalled or refused our cert — pre-MITM, no audit.
 		return
@@ -286,13 +287,16 @@ func newSingleConnListener(c net.Conn) *singleConnListener {
 }
 
 func (l *singleConnListener) Accept() (net.Conn, error) {
-	select {
-	case <-l.done:
-		return nil, net.ErrClosed
-	default:
+	var c net.Conn
+	l.once.Do(func() {
+		c = l.conn
+		close(l.done)
+	})
+	if c != nil {
+		return c, nil
 	}
-	l.once.Do(func() { close(l.done) })
-	return l.conn, nil
+	<-l.done
+	return nil, net.ErrClosed
 }
 
 func (l *singleConnListener) Close() error {
