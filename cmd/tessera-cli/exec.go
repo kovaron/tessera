@@ -80,6 +80,10 @@ func cmdExec() *cobra.Command {
 			tokenID := tokenResp["id"]
 			tokenSecret := tokenResp["secret"]
 
+			if tokenID == "" || tokenSecret == "" {
+				return fmt.Errorf("mint token: server returned incomplete response")
+			}
+
 			// Revoke unconditionally after child exits, regardless of exit code.
 			defer func() {
 				if err := client.do("DELETE", "/v1/tokens/"+tokenID, nil, nil); err != nil {
@@ -158,8 +162,8 @@ func cmdExec() *cobra.Command {
 	c.Flags().StringVar(&proxyAddr, "proxy-addr", "127.0.0.1:8443", "forward proxy address (host:port)")
 	c.Flags().StringVar(&caPath, "ca-path", "", "CA certificate path (default: $HOME/.tessera/ca.pem)")
 
-	_ = c.MarkFlagRequired("upstream")
-	_ = c.MarkFlagRequired("policy")
+	cobra.CheckErr(c.MarkFlagRequired("upstream"))
+	cobra.CheckErr(c.MarkFlagRequired("policy"))
 
 	return c
 }
