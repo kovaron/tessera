@@ -39,8 +39,10 @@ func (fs *ForwardServer) Serve(ln net.Listener) {
 }
 
 func (fs *ForwardServer) handleConn(c net.Conn) {
+	c.SetDeadline(time.Now().Add(30 * time.Second))
 	br := bufio.NewReader(c)
 	req, err := http.ReadRequest(br)
+	c.SetDeadline(time.Time{})
 	if err != nil {
 		c.Close()
 		return
@@ -127,10 +129,12 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 	}
 	tlsConn := tls.Server(c, tlsCfg)
 	defer tlsConn.Close() // idempotent with trackedConn.Close(); releases TLS resources
+	tlsConn.SetDeadline(time.Now().Add(30 * time.Second))
 	if err := tlsConn.Handshake(); err != nil {
-		// Client refused our cert — pre-MITM, no audit.
+		// Client stalled or refused our cert — pre-MITM, no audit.
 		return
 	}
+	tlsConn.SetDeadline(time.Time{})
 
 	// Serve inner HTTP/1.1 requests through the host-mode chain.
 	// trackedConn closes a channel on Close() so we can block until http.Server
@@ -255,8 +259,12 @@ func (rw *connResponseWriter) flush() {
 	rw.conn.Write(rw.buf.Bytes()) //nolint:errcheck
 }
 
-// Flush implements http.Flusher so streaming upstreams (SSE, chunked) are not
-// buffered entirely in memory. Each Flush writes accumulated bytes to the conn.
+// Flush implements http.Flusher. Each call writes accumulated bytes to the conn.
+// Note: connResponseWriter is only used on the plain-HTTP (non-CONNECT) path.
+// It does not emit chunked framing, so streaming works correctly only when the
+// upstream sets Content-Length or Connection: close. SSE/chunked streaming over
+// the plain-HTTP path is best-effort in v1; the TLS-tunnel path uses http.Server
+// which handles framing correctly.
 func (rw *connResponseWriter) Flush() {
 	if !rw.written {
 		rw.WriteHeader(200)
