@@ -32,12 +32,12 @@ func (h *Handlers) unlock(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "wrong passphrase", 401)
 		return
 	}
+	// Build (or restore) the CA leaf factory before flipping unlocked=true so
+	// there is no window where unlocked==true but leafFactory==nil.
+	h.bootstrapCA(r.Context(), dek)
+
 	h.st.dek.Store(dek)
 	h.st.unlocked.Store(true)
-
-	// Build (or restore) the CA leaf factory so the forward proxy can serve TLS.
-	// Errors here are non-fatal — the path-based proxy still works without a CA.
-	h.bootstrapCA(r.Context(), dek)
 
 	w.WriteHeader(204)
 }
@@ -81,16 +81,20 @@ func (h *Handlers) bootstrapCA(ctx context.Context, dek []byte) {
 }
 
 func (h *Handlers) lock(w http.ResponseWriter, r *http.Request) {
-	if v := h.st.dek.Load(); v != nil {
-		if b, ok := v.([]byte); ok {
+	// Snapshot the old DEK slice before replacing the atomic so any concurrent
+	// DEK() load sees either the valid slice or nil — never the zeroed slice.
+	old := h.st.dek.Load()
+	h.st.setLeafFactory(nil)
+	h.st.unlocked.Store(false)
+	h.st.dek.Store([]byte(nil))
+	h.st.key.Lock()
+	// Zero the old slice after it has been swapped out.
+	if old != nil {
+		if b, ok := old.([]byte); ok {
 			for i := range b {
 				b[i] = 0
 			}
 		}
 	}
-	h.st.key.Lock()
-	h.st.setLeafFactory(nil)
-	h.st.unlocked.Store(false)
-	h.st.dek.Store([]byte(nil))
 	w.WriteHeader(204)
 }

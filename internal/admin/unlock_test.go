@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
@@ -114,7 +113,10 @@ func TestUnlockGeneratesCAOnce(t *testing.T) {
 		t.Fatalf("expected CA row after second unlock, got err=%v row=%v", err, caSecond)
 	}
 
-	if !reflect.DeepEqual(caFirst, caSecond) {
-		t.Fatal("CA row changed between unlock cycles — CA was regenerated (not idempotent)")
+	if !bytes.Equal(caFirst.CertCT, caSecond.CertCT) {
+		t.Fatal("CA cert ciphertext changed between unlock cycles — CA was regenerated (not idempotent)")
+	}
+	if !bytes.Equal(caFirst.KeyCT, caSecond.KeyCT) {
+		t.Fatal("CA key ciphertext changed between unlock cycles — CA was regenerated (not idempotent)")
 	}
 }

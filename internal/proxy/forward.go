@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -139,7 +140,7 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 			if lf := fs.Leaves(); lf != nil {
 				return lf.LeafFor(hello.ServerName)
 			}
-			return nil, nil
+			return nil, errors.New("forward proxy: no CA loaded")
 		},
 	}
 	tlsConn := tls.Server(c, tlsCfg)
