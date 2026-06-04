@@ -8,6 +8,7 @@ import (
 	"github.com/kovaron/tessera/internal/audit"
 	"github.com/kovaron/tessera/internal/authz"
 	"github.com/kovaron/tessera/internal/crypto"
+	"github.com/kovaron/tessera/internal/pki"
 	"github.com/kovaron/tessera/internal/store"
 	"github.com/kovaron/tessera/internal/upstreams"
 )
@@ -21,6 +22,7 @@ type DataPlane struct {
 	Audit       *audit.Logger
 	IsUnlocked  IsUnlocked
 	DEK         func() []byte
+	LeafFactory *pki.LeafFactory // nil until CA loaded (Task 7)
 }
 
 type storePolicySource struct {
@@ -40,16 +42,22 @@ func (sp storePolicySource) Get(ctx context.Context, id string) ([]byte, string,
 	return pt, p.Engine, nil
 }
 
-func (d *DataPlane) Handler() http.Handler {
+// buildChain wraps terminal with lock → authn → authz → inject middleware.
+func (d *DataPlane) buildChain(terminal http.Handler) http.Handler {
 	src := storePolicySource{s: d.Store, dek: d.DEK}
-	rp := NewReverseProxy(d.Upstreams, d.Secrets, d.Audit)
-	chain := LockMiddleware(d.IsUnlocked)(
+	return LockMiddleware(d.IsUnlocked)(
 		AuthnMiddleware(d.Store)(
 			AuthzMiddleware(d.Engine, d.PolicyCache, src, d.Audit)(
-				InjectMiddleware(rp),
+				InjectMiddleware(terminal),
 			),
 		),
 	)
+}
+
+// Handler returns the path-based (/u/<id>/...) handler.
+func (d *DataPlane) Handler() http.Handler {
+	rp := NewReverseProxy(d.Upstreams, d.Secrets, d.Audit)
+	chain := d.buildChain(rp)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/healthz" {
 			w.Header().Set("Content-Type", "application/json")
@@ -63,5 +71,42 @@ func (d *DataPlane) Handler() http.Handler {
 			return
 		}
 		chain.ServeHTTP(w, r)
+	})
+}
+
+// HandlerForHostMode returns a handler that resolves the upstream from the
+// request Host header instead of the URL path. upstreamID is the ID already
+// resolved by the forward listener (via registry.ByHostname); the handler
+// verifies the token's upstream_id matches before forwarding.
+func (d *DataPlane) HandlerForHostMode(upstreamID string) http.Handler {
+	terminal := newHostTerminal(upstreamID, d.Upstreams, d.Secrets, d.Audit)
+	return d.buildChain(terminal)
+}
+
+// newHostTerminal returns an http.Handler that checks upstream_id, resolves
+// the upstream, and forwards via httputil.ReverseProxy.
+func newHostTerminal(upstreamID string, reg *upstreams.Registry, secrets SecretResolver, log *audit.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tok, ok := TokenFromContext(r.Context())
+		if !ok {
+			http.Error(w, "no token", http.StatusUnauthorized)
+			return
+		}
+		if tok.UpstreamID != upstreamID {
+			log.Emit(audit.Event{
+				TokenID:    tok.ID,
+				TokenLabel: tok.Label,
+				UpstreamID: upstreamID,
+				Method:     r.Method,
+				Path:       r.URL.Path,
+				Decision:   "deny",
+				DenyReason: "upstream_mismatch",
+				Status:     http.StatusForbidden,
+				RemoteAddr: r.RemoteAddr,
+			})
+			http.Error(w, "upstream mismatch", http.StatusForbidden)
+			return
+		}
+		forwardToUpstream(upstreamID, reg, secrets, log, w, r, tok)
 	})
 }

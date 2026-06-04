@@ -19,6 +19,87 @@ type SecretResolver interface {
 	Resolve(ctx context.Context, ref string) ([]byte, error)
 }
 
+// forwardToUpstream resolves the upstream by id, resolves the secret, and
+// reverse-proxies the request. rest is the path suffix to append to the
+// upstream base path (use r.URL.Path for host-mode, parsed rest for path-mode).
+func forwardToUpstream(id string, reg *upstreams.Registry, secrets SecretResolver, log *audit.Logger, w http.ResponseWriter, r *http.Request, tok *store.Token) {
+	emitFail := func(reason string, status int) {
+		ev := audit.Event{
+			Method:     r.Method,
+			Path:       r.URL.Path,
+			Decision:   "deny",
+			DenyReason: reason,
+			Status:     status,
+			RemoteAddr: r.RemoteAddr,
+			UpstreamID: id,
+		}
+		if tok != nil {
+			ev.TokenID = tok.ID
+			ev.TokenLabel = tok.Label
+		}
+		log.Emit(ev)
+	}
+
+	up, ok := reg.Get(id)
+	if !ok {
+		emitFail("unknown_upstream", http.StatusNotFound)
+		http.Error(w, "unknown upstream", http.StatusNotFound)
+		return
+	}
+	target, err := url.Parse(up.BaseURL)
+	if err != nil {
+		emitFail("bad_upstream_url: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "bad upstream url", http.StatusInternalServerError)
+		return
+	}
+	sec, err := secrets.Resolve(r.Context(), up.Inject.SecretRef)
+	if err != nil {
+		emitFail("secret_resolve_failed: "+err.Error(), http.StatusBadGateway)
+		http.Error(w, "secret resolve failed: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	reqPath := r.URL.Path
+	director := func(req *http.Request) {
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+		req.URL.Path = path.Clean(strings.TrimSuffix(target.Path, "/") + reqPath)
+		req.Host = target.Host
+		Sanitize(req.Header)
+		if err := upstreams.Apply(up.Inject, req, sec); err != nil {
+			req.Header.Set("X-Inject-Error", err.Error())
+		}
+	}
+	var upstreamErr string
+	rp := &httputil.ReverseProxy{
+		Director: director,
+		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, e error) {
+			upstreamErr = e.Error()
+			http.Error(w, fmt.Sprintf("upstream: %v", e), http.StatusBadGateway)
+		},
+	}
+	start := time.Now()
+	sw := &statusWriter{ResponseWriter: w, status: 200}
+	rp.ServeHTTP(sw, r)
+	ev := audit.Event{
+		TokenID:        tok.ID,
+		TokenLabel:     tok.Label,
+		UpstreamID:     id,
+		Method:         r.Method,
+		Path:           r.URL.Path,
+		QueryKeys:      keysOf(r.URL.Query()),
+		Decision:       "allow",
+		UpstreamStatus: sw.status,
+		Status:         sw.status,
+		LatencyMS:      time.Since(start).Milliseconds(),
+		RemoteAddr:     r.RemoteAddr,
+	}
+	if upstreamErr != "" {
+		ev.DenyReason = "upstream_error: " + upstreamErr
+	}
+	log.Emit(ev)
+}
+
 func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver, log *audit.Logger) http.Handler {
 	emitFail := func(r *http.Request, tok *store.Token, id, reason string, status int) {
 		ev := audit.Event{
@@ -49,63 +130,12 @@ func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver, log *audit
 			http.Error(w, "upstream mismatch", http.StatusForbidden)
 			return
 		}
-		up, ok := reg.Get(id)
-		if !ok {
-			emitFail(r, tok, id, "unknown_upstream", http.StatusNotFound)
-			http.Error(w, "unknown upstream", http.StatusNotFound)
-			return
-		}
-		target, err := url.Parse(up.BaseURL)
-		if err != nil {
-			emitFail(r, tok, id, "bad_upstream_url: "+err.Error(), http.StatusInternalServerError)
-			http.Error(w, "bad upstream url", http.StatusInternalServerError)
-			return
-		}
-		sec, err := secrets.Resolve(r.Context(), up.Inject.SecretRef)
-		if err != nil {
-			emitFail(r, tok, id, "secret_resolve_failed: "+err.Error(), http.StatusBadGateway)
-			http.Error(w, "secret resolve failed: "+err.Error(), http.StatusBadGateway)
-			return
-		}
-
-		director := func(req *http.Request) {
-			req.URL.Scheme = target.Scheme
-			req.URL.Host = target.Host
-			req.URL.Path = path.Clean(strings.TrimSuffix(target.Path, "/") + rest)
-			req.Host = target.Host
-			Sanitize(req.Header) // authoritative strip; InjectMiddleware also strips upstream of here (defense in depth)
-			if err := upstreams.Apply(up.Inject, req, sec); err != nil {
-				req.Header.Set("X-Inject-Error", err.Error())
-			}
-		}
-		var upstreamErr string
-		rp := &httputil.ReverseProxy{
-			Director: director,
-			ErrorHandler: func(w http.ResponseWriter, _ *http.Request, e error) {
-				upstreamErr = e.Error()
-				http.Error(w, fmt.Sprintf("upstream: %v", e), http.StatusBadGateway)
-			},
-		}
-		start := time.Now()
-		sw := &statusWriter{ResponseWriter: w, status: 200}
-		rp.ServeHTTP(sw, r)
-		ev := audit.Event{
-			TokenID:        tok.ID,
-			TokenLabel:     tok.Label,
-			UpstreamID:     id,
-			Method:         r.Method,
-			Path:           r.URL.Path,
-			QueryKeys:      keysOf(r.URL.Query()),
-			Decision:       "allow",
-			UpstreamStatus: sw.status,
-			Status:         sw.status,
-			LatencyMS:      time.Since(start).Milliseconds(),
-			RemoteAddr:     r.RemoteAddr,
-		}
-		if upstreamErr != "" {
-			ev.DenyReason = "upstream_error: " + upstreamErr
-		}
-		log.Emit(ev)
+		// Rewrite path to strip the /u/<id> prefix before passing to forwardToUpstream.
+		orig := r.URL.Path
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = rest
+		forwardToUpstream(id, reg, secrets, log, w, r2, tok)
+		_ = orig
 	})
 }
 
