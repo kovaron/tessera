@@ -107,6 +107,6 @@ func newHostTerminal(upstreamID string, reg *upstreams.Registry, secrets SecretR
 			http.Error(w, "upstream mismatch", http.StatusForbidden)
 			return
 		}
-		forwardToUpstream(upstreamID, reg, secrets, log, w, r, tok)
+		forwardToUpstream(upstreamID, reg, secrets, log, w, r, tok, r.URL.Path)
 	})
 }

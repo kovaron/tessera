@@ -58,6 +58,9 @@ func (fs *ForwardServer) handleConn(c net.Conn) {
 }
 
 func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http.Request) {
+	// Ensure the raw conn is always closed on exit (idempotent with tlsConn.Close).
+	defer c.Close()
+
 	// Resolve upstream before replying 200, so unknown hosts get a proper error.
 	up, ok := fs.DataPlane.Upstreams.ByHostname(host)
 	if !ok {
@@ -107,23 +110,31 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 	}
 
 	// Serve inner HTTP/1.1 requests through the host-mode chain.
-	// http.Server.Serve spawns a goroutine per connection, so we use a
-	// WaitGroup around a wrapping handler to detect when the connection
-	// goroutine finishes and the conn can be closed safely.
+	// trackedConn closes a channel on Close() so we can block until http.Server
+	// tears down the connection — safe for both malformed HTTP and keep-alive.
 	handler := fs.DataPlane.HandlerForHostMode(up.ID)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer wg.Done()
-		schemeHostMiddleware(host, "https", handler).ServeHTTP(w, r)
-	})
+	tc := &trackedConn{Conn: tlsConn, closed: make(chan struct{})}
 	innerSrv := &http.Server{
-		Handler:  wrappedHandler,
+		Handler:  schemeHostMiddleware(host, "https", handler),
 		ErrorLog: log.New(io.Discard, "", 0),
 	}
-	scl := newSingleConnListener(tlsConn)
+	scl := newSingleConnListener(tc)
 	go innerSrv.Serve(scl) //nolint:errcheck
-	wg.Wait()
+	<-tc.closed
+}
+
+// trackedConn wraps a net.Conn and signals closed when Close is called.
+// This lets handleCONNECT block until http.Server tears down the connection
+// regardless of whether the handler was ever invoked (e.g. malformed HTTP).
+type trackedConn struct {
+	net.Conn
+	once   sync.Once
+	closed chan struct{}
+}
+
+func (tc *trackedConn) Close() error {
+	tc.once.Do(func() { close(tc.closed) })
+	return tc.Conn.Close()
 }
 
 // dispatchOneRequest handles a single already-parsed plain HTTP request by

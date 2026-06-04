@@ -325,6 +325,40 @@ func TestForwardProxy_UpstreamMismatch(t *testing.T) {
 	}
 }
 
+// TestForwardProxy_MalformedInner: after CONNECT+TLS, write garbage then close;
+// verify the proxy goroutine unblocks promptly and the proxy can serve a second
+// connection.
+func TestForwardProxy_MalformedInner(t *testing.T) {
+	h := newTestHarness(t)
+	h.addUpstream(t, "maltest", "http://127.0.0.1:1", []string{"maltest.test"}, "env://NOKEY")
+
+	tlsConn := h.dialAndCONNECT(t, "maltest.test")
+
+	// Write garbage — not a valid HTTP request.
+	tlsConn.Write([]byte("NOTHTTP garbage\r\n\r\n")) //nolint:errcheck
+	tlsConn.Close()
+
+	// Proxy goroutine should unblock; a subsequent CONNECT to a different host
+	// should still succeed (502 expected because "second.test" is unknown).
+	proxyAddr := h.Listener.Addr().String()
+	raw2, err := net.Dial("tcp", proxyAddr)
+	if err != nil {
+		t.Fatalf("dial proxy after malformed: %v", err)
+	}
+	defer raw2.Close()
+	raw2.Write([]byte("CONNECT second.test:443 HTTP/1.1\r\nHost: second.test:443\r\n\r\n")) //nolint:errcheck
+	raw2.SetReadDeadline(time.Now().Add(3 * time.Second))
+	buf := make([]byte, 256)
+	n, err := raw2.Read(buf)
+	if err != nil {
+		t.Fatalf("read after malformed: %v", err)
+	}
+	got := string(buf[:n])
+	if len(got) < 12 || got[9:12] != "502" {
+		t.Fatalf("expected 502 from second conn, got: %q", got)
+	}
+}
+
 // TestForwardProxy_HappyPath: full MITM flow — authn, authz, inject, forward.
 func TestForwardProxy_HappyPath(t *testing.T) {
 	t.Setenv("FAKE_KEY", "real-upstream-token")

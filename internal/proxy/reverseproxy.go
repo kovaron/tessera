@@ -20,13 +20,14 @@ type SecretResolver interface {
 }
 
 // forwardToUpstream resolves the upstream by id, resolves the secret, and
-// reverse-proxies the request. rest is the path suffix to append to the
-// upstream base path (use r.URL.Path for host-mode, parsed rest for path-mode).
-func forwardToUpstream(id string, reg *upstreams.Registry, secrets SecretResolver, log *audit.Logger, w http.ResponseWriter, r *http.Request, tok *store.Token) {
+// reverse-proxies the request. r.URL.Path is the upstream-relative path used
+// for the director; auditPath is logged in audit events (pass r.URL.Path when
+// no rewriting is needed, or the original pre-rewrite path in path-mode).
+func forwardToUpstream(id string, reg *upstreams.Registry, secrets SecretResolver, log *audit.Logger, w http.ResponseWriter, r *http.Request, tok *store.Token, auditPath string) {
 	emitFail := func(reason string, status int) {
 		ev := audit.Event{
 			Method:     r.Method,
-			Path:       r.URL.Path,
+			Path:       auditPath,
 			Decision:   "deny",
 			DenyReason: reason,
 			Status:     status,
@@ -86,7 +87,7 @@ func forwardToUpstream(id string, reg *upstreams.Registry, secrets SecretResolve
 		TokenLabel:     tok.Label,
 		UpstreamID:     id,
 		Method:         r.Method,
-		Path:           r.URL.Path,
+		Path:           auditPath,
 		QueryKeys:      keysOf(r.URL.Query()),
 		Decision:       "allow",
 		UpstreamStatus: sw.status,
@@ -131,11 +132,11 @@ func NewReverseProxy(reg *upstreams.Registry, secrets SecretResolver, log *audit
 			return
 		}
 		// Rewrite path to strip the /u/<id> prefix before passing to forwardToUpstream.
-		orig := r.URL.Path
+		// Pass the original full path as auditPath so audit logs /u/<id>/... not just rest.
+		origPath := r.URL.Path
 		r2 := r.Clone(r.Context())
 		r2.URL.Path = rest
-		forwardToUpstream(id, reg, secrets, log, w, r2, tok)
-		_ = orig
+		forwardToUpstream(id, reg, secrets, log, w, r2, tok, origPath)
 	})
 }
 
