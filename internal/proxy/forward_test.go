@@ -359,6 +359,44 @@ func TestForwardProxy_MalformedInner(t *testing.T) {
 	}
 }
 
+// TestBufferedConn_DrainsBufioBuffer: unit test for the bufferedConn shim.
+// Verifies that bytes already consumed into a bufio.Reader buffer are re-exposed
+// through Read so that a tls.Server handed the bufferedConn sees them correctly
+// (regression for pipeline-after-CONNECT bug where pipelined bytes were lost).
+func TestBufferedConn_DrainsBufioBuffer(t *testing.T) {
+	payload := []byte("CONNECT host:443 HTTP/1.1\r\nHost: host:443\r\n\r\nHELLO_PIPELINED")
+
+	// Write payload to one end of a net.Pipe; read via bufio on the other.
+	client, server := net.Pipe()
+	defer client.Close()
+	defer server.Close()
+
+	go client.Write(payload) //nolint:errcheck
+
+	br := bufio.NewReader(server)
+	// Consume just the HTTP request (up to \r\n\r\n), leaving "HELLO_PIPELINED"
+	// buffered inside br.
+	req, err := http.ReadRequest(br)
+	if err != nil {
+		t.Fatalf("ReadRequest: %v", err)
+	}
+	if req.Method != "CONNECT" {
+		t.Fatalf("expected CONNECT, got %s", req.Method)
+	}
+
+	// newBufferedConn should expose the buffered remainder.
+	bc := newBufferedConn(server, br)
+
+	got := make([]byte, 16)
+	n, err := bc.Read(got)
+	if err != nil {
+		t.Fatalf("Read from bufferedConn: %v", err)
+	}
+	if string(got[:n]) != "HELLO_PIPELINED" {
+		t.Fatalf("expected %q, got %q", "HELLO_PIPELINED", got[:n])
+	}
+}
+
 // TestForwardProxy_HappyPath: full MITM flow — authn, authz, inject, forward.
 func TestForwardProxy_HappyPath(t *testing.T) {
 	t.Setenv("FAKE_KEY", "real-upstream-token")

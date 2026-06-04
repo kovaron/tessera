@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/kovaron/tessera/internal/audit"
 	"github.com/kovaron/tessera/internal/pki"
@@ -48,14 +49,35 @@ func (fs *ForwardServer) handleConn(c net.Conn) {
 	host := hostOnly(req.Host)
 
 	if req.Method == http.MethodConnect {
-		// handleCONNECT owns the conn lifecycle via http.Server.
-		fs.handleCONNECT(c, host, req)
+		// Pass a bufferedConn so any bytes already read into br's buffer (e.g.
+		// a pipelined TLS ClientHello) are not silently dropped when we hand
+		// the conn to tls.Server.
+		bc := newBufferedConn(c, br)
+		fs.handleCONNECT(bc, host, req)
 	} else {
 		// Plain HTTP (rare for HTTPS-only upstreams).
 		defer c.Close()
 		fs.dispatchOneRequest(c, host, "http", req)
 	}
 }
+
+// bufferedConn wraps a net.Conn and drains any bytes already buffered by a
+// bufio.Reader before reading from the underlying conn. This is needed after
+// http.ReadRequest so that pipelined data (e.g. a TLS ClientHello sent
+// immediately after the CONNECT line) is not discarded.
+type bufferedConn struct {
+	net.Conn
+	r io.Reader
+}
+
+func newBufferedConn(c net.Conn, br *bufio.Reader) net.Conn {
+	if br.Buffered() == 0 {
+		return c
+	}
+	return bufferedConn{Conn: c, r: io.MultiReader(io.LimitReader(br, int64(br.Buffered())), c)}
+}
+
+func (b bufferedConn) Read(p []byte) (int, error) { return b.r.Read(p) }
 
 func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http.Request) {
 	// Ensure the raw conn is always closed on exit (idempotent with tlsConn.Close).
@@ -104,6 +126,7 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 		},
 	}
 	tlsConn := tls.Server(c, tlsCfg)
+	defer tlsConn.Close() // idempotent with trackedConn.Close(); releases TLS resources
 	if err := tlsConn.Handshake(); err != nil {
 		// Client refused our cert — pre-MITM, no audit.
 		return
@@ -115,8 +138,10 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 	handler := fs.DataPlane.HandlerForHostMode(up.ID)
 	tc := &trackedConn{Conn: tlsConn, closed: make(chan struct{})}
 	innerSrv := &http.Server{
-		Handler:  schemeHostMiddleware(host, "https", handler),
-		ErrorLog: log.New(io.Discard, "", 0),
+		Handler:           schemeHostMiddleware(host, "https", handler),
+		ErrorLog:          log.New(io.Discard, "", 0),
+		ReadHeaderTimeout: 30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 	scl := newSingleConnListener(tc)
 	go innerSrv.Serve(scl) //nolint:errcheck
@@ -228,6 +253,16 @@ func (rw *connResponseWriter) flush() {
 		rw.WriteHeader(200)
 	}
 	rw.conn.Write(rw.buf.Bytes()) //nolint:errcheck
+}
+
+// Flush implements http.Flusher so streaming upstreams (SSE, chunked) are not
+// buffered entirely in memory. Each Flush writes accumulated bytes to the conn.
+func (rw *connResponseWriter) Flush() {
+	if !rw.written {
+		rw.WriteHeader(200)
+	}
+	rw.conn.Write(rw.buf.Bytes()) //nolint:errcheck
+	rw.buf.Reset()
 }
 
 // singleConnListener is a net.Listener that serves exactly one connection then

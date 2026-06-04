@@ -95,15 +95,16 @@ func main() {
 	if dp.LeafFactory != nil {
 		ln, err := net.Listen("tcp", *forwardAddr)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("forward proxy disabled: %v", err)
+		} else {
+			fwd := &proxy.ForwardServer{
+				DataPlane: dp,
+				Leaves:    dp.LeafFactory,
+				Audit:     auditLogger,
+			}
+			go fwd.Serve(ln)
+			log.Printf("tessera forward proxy listening on %s", *forwardAddr)
 		}
-		fwd := &proxy.ForwardServer{
-			DataPlane: dp,
-			Leaves:    dp.LeafFactory,
-			Audit:     auditLogger,
-		}
-		go fwd.Serve(ln)
-		log.Printf("tessera forward proxy listening on %s", *forwardAddr)
 	} else {
 		log.Printf("forward proxy disabled (no CA) — set up CA and restart")
 	}
