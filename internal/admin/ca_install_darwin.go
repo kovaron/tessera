@@ -9,6 +9,7 @@ import (
 	"os/exec"
 )
 
+// Uses the daemon user's login keychain. Tessera is single-user local-only by design.
 func (h *Handlers) installCA(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

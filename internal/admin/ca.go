@@ -14,7 +14,11 @@ func (h *Handlers) getCA(w http.ResponseWriter, r *http.Request) {
 	}
 	factory := h.st.LeafFactory()
 	if factory == nil {
-		http.Error(w, "locked", http.StatusServiceUnavailable)
+		msg := "locked"
+		if h.st.Unlocked() {
+			msg = "ca not initialized"
+		}
+		http.Error(w, msg, http.StatusServiceUnavailable)
 		return
 	}
 	w.Header().Set("Content-Type", "application/x-pem-file")

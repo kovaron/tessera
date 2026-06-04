@@ -28,7 +28,10 @@ func NewClient(path string) *Client {
 
 // download streams the response body of a GET request to w.
 func (c *Client) download(path string, w io.Writer) error {
-	req, _ := http.NewRequest(http.MethodGet, "http://unix"+path, nil)
+	req, err := http.NewRequest(http.MethodGet, "http://unix"+path, nil)
+	if err != nil {
+		return err
+	}
 	resp, err := c.hc.Do(req)
 	if err != nil {
 		return err
@@ -48,7 +51,10 @@ func (c *Client) do(method, path string, body any, out any) error {
 		b, _ := json.Marshal(body)
 		rd = bytes.NewReader(b)
 	}
-	req, _ := http.NewRequest(method, "http://unix"+path, rd)
+	req, err := http.NewRequest(method, "http://unix"+path, rd)
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.hc.Do(req)
 	if err != nil {
