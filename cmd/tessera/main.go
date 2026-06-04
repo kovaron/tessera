@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,6 +24,7 @@ import (
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:8080", "listen addr")
+	forwardAddr := flag.String("forward-addr", "127.0.0.1:8443", "forward proxy listen addr (requires CA)")
 	dbPath := flag.String("db", os.ExpandEnv("$HOME/.tessera/data.db"), "sqlite path")
 	sockPath := flag.String("admin-socket", os.ExpandEnv("$HOME/.tessera/admin.sock"), "admin socket")
 	auditPath := flag.String("audit-log", os.ExpandEnv("$HOME/.tessera/audit.log"), "audit log file path")
@@ -87,6 +89,24 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
+
+	// Forward proxy listener — only started once a CA / leaf factory is available.
+	// Task 7 will wire the LeafFactory at unlock time; until then it is nil.
+	if dp.LeafFactory != nil {
+		ln, err := net.Listen("tcp", *forwardAddr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fwd := &proxy.ForwardServer{
+			DataPlane: dp,
+			Leaves:    dp.LeafFactory,
+			Audit:     auditLogger,
+		}
+		go fwd.Serve(ln)
+		log.Printf("tessera forward proxy listening on %s", *forwardAddr)
+	} else {
+		log.Printf("forward proxy disabled (no CA) — set up CA and restart")
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
