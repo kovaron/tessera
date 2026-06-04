@@ -83,3 +83,8 @@ func (f *LeafFactory) LeafFor(host string) (*tls.Certificate, error) {
 func (f *LeafFactory) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return f.LeafFor(hello.ServerName)
 }
+
+// CAPEM returns the PEM-encoded CA certificate.
+func (f *LeafFactory) CAPEM() []byte {
+	return f.ca.CertPEM()
+}

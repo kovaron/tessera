@@ -26,6 +26,22 @@ func NewClient(path string) *Client {
 	}
 }
 
+// download streams the response body of a GET request to w.
+func (c *Client) download(path string, w io.Writer) error {
+	req, _ := http.NewRequest(http.MethodGet, "http://unix"+path, nil)
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("%s: %s", resp.Status, b)
+	}
+	_, err = io.Copy(w, resp.Body)
+	return err
+}
+
 func (c *Client) do(method, path string, body any, out any) error {
 	var rd io.Reader
 	if body != nil {

@@ -62,6 +62,7 @@ func NewHandlersWithRegistry(st *State, reg *upstreams.Registry) *Handlers {
 	h.registerMint()
 	h.registerRevoke()
 	h.registerAttenuate()
+	h.registerCA()
 	return h
 }
 

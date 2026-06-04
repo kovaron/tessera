@@ -14,7 +14,7 @@ func newRoot() *cobra.Command {
 	root := &cobra.Command{Use: "tessera-cli"}
 	root.PersistentFlags().StringVar(&socketPath, "socket", os.ExpandEnv("$HOME/.tessera/admin.sock"), "admin socket path")
 
-	root.AddCommand(cmdBootstrap(), cmdUnlock(), cmdLock(), cmdStatus(), cmdUpstream(), cmdPolicy(), cmdToken())
+	root.AddCommand(cmdBootstrap(), cmdUnlock(), cmdLock(), cmdStatus(), cmdUpstream(), cmdPolicy(), cmdToken(), cmdCA())
 	return root
 }
 
