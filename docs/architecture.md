@@ -26,7 +26,7 @@ A short overview of how Tessera is put together. For the original design and the
 
 Two binaries plus a desktop app, all running as the same OS user on one machine.
 
-- **`tessera`** — long-running daemon. Listens on `127.0.0.1:8080` for agent traffic. Listens on `~/.tessera/admin.sock` (mode 0600) for admin commands.
+- **`tessera`** — long-running daemon. Listens on `127.0.0.1:8080` (path-based listener) for agents that address requests to `/u/<upstream_id>/...`. Listens on `127.0.0.1:8443` (forward-proxy listener) for HTTP CONNECT tunnel requests — it accepts the CONNECT, performs on-the-fly TLS MITM using a Tessera-issued leaf cert, and routes the decrypted traffic by Host header to the matched upstream. Listens on `~/.tessera/admin.sock` (mode 0600) for admin commands.
 - **`tessera-cli`** — operator CLI for bootstrap, unlock, and CRUD. Talks to the admin socket.
 - **Desktop UI** (Tauri) — bundles `tessera-cli` as a sidecar for bootstrap, talks to the admin socket directly for everything else.
 
@@ -46,6 +46,7 @@ Two binaries plus a desktop app, all running as the same OS user on one machine.
 | `internal/audit` | Structured JSON event types, multi-writer logger, size-based rotating file writer. |
 | `internal/admin` | HTTP handlers on the unix socket: status, unlock/lock, upstreams, policies, tokens, attenuate. |
 | `internal/config` | YAML config loader (scaffolded, not yet consumed by the daemon). |
+| `internal/pki` | Root CA generation, leaf cert factory with LRU cache, AEAD wrap/unwrap under the DEK. |
 
 ## Where the guards sit
 
@@ -99,6 +100,44 @@ Agent → POST /u/<upstream_id>/<path>
                 │
                 ▼
        audit.Emit({decision: "allow", status, latency_ms, …})
+```
+
+## Transparent mode (forward proxy)
+
+```
+tessera-cli exec --upstream openai -- python agent.py
+        │
+        │  forks child with env:
+        │    HTTPS_PROXY=http://127.0.0.1:8443
+        │    REQUESTS_CA_BUNDLE=~/.tessera/ca.pem
+        │    PXY_TOKEN=pxy_xyz...
+        ▼
+Agent → CONNECT api.openai.com:443
+        Authorization: Bearer pxy_xyz...
+                │
+                ▼
+       ForwardProxy listener (127.0.0.1:8443)
+         authn + authz (same middleware chain)
+                │
+                ▼
+       TLS MITM
+         leaf cert issued by Tessera CA for api.openai.com
+         client TLS terminated; new TLS conn opened upstream
+                │
+                ▼
+       Host-header routing
+         host = "api.openai.com"  →  upstream "openai"
+         strip Authorization / Cookie / Proxy-Authorization
+         secret = secrets.Cache.Get(upstream.inject.secret_ref)
+         apply inject rule  →  Authorization: Bearer <real key>
+                │
+                ▼
+       Upstream API (api.openai.com)
+                │
+                ▼ response tunnelled back to agent
+       audit.Emit({decision: "allow", …})
+                │
+        on child exit: token auto-revoked
 ```
 
 ## What is intentionally out of scope (v1)

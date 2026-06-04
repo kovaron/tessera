@@ -153,6 +153,54 @@ The proxy:
 
 ---
 
+## Transparent mode
+
+Instead of constructing proxy URLs like `http://127.0.0.1:8080/u/openai/v1/chat/completions`, you can run your agent as a subprocess and let it talk directly to `https://api.openai.com`. Tessera intercepts via HTTP CONNECT, MITMs TLS using a locally-issued leaf cert, and routes by Host header.
+
+```bash
+./tessera-cli exec --upstream openai --policy <policy-id> -- python my_agent.py
+```
+
+The child process inherits `HTTPS_PROXY`, `*_CA_BUNDLE`, and `PXY_TOKEN` from the environment. When the process exits, the token is automatically revoked.
+
+### Install the CA (one-time per machine)
+
+```bash
+./tessera-cli ca export > ~/.tessera/ca.pem
+./tessera-cli ca install   # macOS: shells out to `security add-trusted-cert`
+```
+
+> **macOS only.** On other platforms, take `~/.tessera/ca.pem` and install it into your system trust store manually.
+
+### Register hostnames
+
+Either via the desktop UI (Upstreams screen → comma-separated Hostnames field) or the admin socket:
+
+```bash
+curl --unix-socket ~/.tessera/admin.sock -s -X POST http://localhost/v1/upstreams \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "openai",
+    "base_url": "https://api.openai.com",
+    "inject": { "type": "bearer", "secret_ref": "env://OPENAI_API_KEY" },
+    "hostnames": ["api.openai.com"]
+  }'
+```
+
+The `hostnames` field maps incoming `CONNECT` Host headers to an upstream. A request for an unregistered hostname is denied — there is no passthrough mode in v1.
+
+### Run your agent under the proxy
+
+```bash
+./tessera-cli exec --upstream openai --policy <policy-id> -- python my_agent.py
+```
+
+All HTTPS traffic from the child process to `api.openai.com` is intercepted and policy-checked. Cert-pinned clients will fail the TLS handshake — that is intentional; the proxy must own the TLS session to inject credentials and evaluate policy.
+
+The forward-proxy listener defaults to `127.0.0.1:8443`. Override with `--forward-addr` when starting the daemon.
+
+---
+
 ## Desktop UI
 
 A macOS admin app built with Tauri provides a graphical alternative to `tessera-cli`:
