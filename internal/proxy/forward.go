@@ -22,7 +22,10 @@ import (
 // then dispatches the inner request through the existing middleware chain.
 type ForwardServer struct {
 	DataPlane *DataPlane
-	Leaves    *pki.LeafFactory
+	// Leaves is called at handshake time to fetch the current LeafFactory.
+	// It returns nil when the vault is locked (no CA loaded), in which case
+	// the CONNECT tunnel is rejected with 503.
+	Leaves func() *pki.LeafFactory
 	// Audit is used for pre-chain events (unknown_host, leaf_mint_failed).
 	Audit *audit.Logger
 }
@@ -100,8 +103,15 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 		return
 	}
 
+	// Fetch the current leaf factory. Returns nil when the vault is locked.
+	leaves := fs.Leaves()
+	if leaves == nil {
+		writeHTTPError(c, http.StatusServiceUnavailable, "CA not available (vault locked)")
+		return
+	}
+
 	// Mint leaf cert for this hostname.
-	cert, err := fs.Leaves.LeafFor(host)
+	cert, err := leaves.LeafFor(host)
 	if err != nil {
 		fs.Audit.Emit(audit.Event{
 			Method:     connectReq.Method,
@@ -126,7 +136,10 @@ func (fs *ForwardServer) handleCONNECT(c net.Conn, host string, connectReq *http
 	tlsCfg := &tls.Config{
 		Certificates: []tls.Certificate{*cert},
 		GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			return fs.Leaves.LeafFor(hello.ServerName)
+			if lf := fs.Leaves(); lf != nil {
+				return lf.LeafFor(hello.ServerName)
+			}
+			return nil, nil
 		},
 	}
 	tlsConn := tls.Server(c, tlsCfg)

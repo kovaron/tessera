@@ -90,23 +90,20 @@ func main() {
 		}
 	}()
 
-	// Forward proxy listener — only started once a CA / leaf factory is available.
-	// Task 7 will wire the LeafFactory at unlock time; until then it is nil.
-	if dp.LeafFactory != nil {
-		ln, err := net.Listen("tcp", *forwardAddr)
-		if err != nil {
-			log.Printf("forward proxy disabled: %v", err)
-		} else {
-			fwd := &proxy.ForwardServer{
-				DataPlane: dp,
-				Leaves:    dp.LeafFactory,
-				Audit:     auditLogger,
-			}
-			go fwd.Serve(ln)
-			log.Printf("tessera forward proxy listening on %s", *forwardAddr)
-		}
+	// Forward proxy listener — started unconditionally. The leaf factory is fetched
+	// at handshake time via st.LeafFactory; it returns nil while locked, which causes
+	// handleCONNECT to reject with 503 until the vault is unlocked.
+	ln, err := net.Listen("tcp", *forwardAddr)
+	if err != nil {
+		log.Printf("forward proxy disabled: %v", err)
 	} else {
-		log.Printf("forward proxy disabled (no CA) — set up CA and restart")
+		fwd := &proxy.ForwardServer{
+			DataPlane: dp,
+			Leaves:    st.LeafFactory,
+			Audit:     auditLogger,
+		}
+		go fwd.Serve(ln)
+		log.Printf("tessera forward proxy listening on %s", *forwardAddr)
 	}
 
 	stop := make(chan os.Signal, 1)

@@ -6,15 +6,17 @@ import (
 	"sync/atomic"
 
 	"github.com/kovaron/tessera/internal/crypto"
+	"github.com/kovaron/tessera/internal/pki"
 	"github.com/kovaron/tessera/internal/store"
 	"github.com/kovaron/tessera/internal/upstreams"
 )
 
 type State struct {
-	store    store.Store
-	key      *crypto.PassphraseProvider
-	unlocked atomic.Bool
-	dek      atomic.Value // []byte
+	store       store.Store
+	key         *crypto.PassphraseProvider
+	unlocked    atomic.Bool
+	dek         atomic.Value // []byte
+	leafFactory atomic.Pointer[pki.LeafFactory]
 }
 
 func NewState(s store.Store, key *crypto.PassphraseProvider) *State {
@@ -30,6 +32,12 @@ func (s *State) DEK() []byte {
 	}
 	return v.([]byte)
 }
+
+// LeafFactory returns the current leaf factory, or nil if the CA has not been
+// loaded (vault is locked or CA bootstrap failed).
+func (s *State) LeafFactory() *pki.LeafFactory { return s.leafFactory.Load() }
+
+func (s *State) setLeafFactory(f *pki.LeafFactory) { s.leafFactory.Store(f) }
 
 type Handlers struct {
 	mux *http.ServeMux

@@ -8,7 +8,6 @@ import (
 	"github.com/kovaron/tessera/internal/audit"
 	"github.com/kovaron/tessera/internal/authz"
 	"github.com/kovaron/tessera/internal/crypto"
-	"github.com/kovaron/tessera/internal/pki"
 	"github.com/kovaron/tessera/internal/store"
 	"github.com/kovaron/tessera/internal/upstreams"
 )
@@ -22,7 +21,6 @@ type DataPlane struct {
 	Audit       *audit.Logger
 	IsUnlocked  IsUnlocked
 	DEK         func() []byte
-	LeafFactory *pki.LeafFactory // nil until CA loaded (Task 7)
 }
 
 type storePolicySource struct {

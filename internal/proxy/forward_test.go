@@ -81,7 +81,6 @@ func newTestHarness(t *testing.T) *testHarness {
 		Audit:       al,
 		IsUnlocked:  func() bool { return true },
 		DEK:         func() []byte { return dek },
-		LeafFactory: leaves,
 	}
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -92,7 +91,7 @@ func newTestHarness(t *testing.T) *testHarness {
 
 	fwd := &ForwardServer{
 		DataPlane: dp,
-		Leaves:    leaves,
+		Leaves:    func() *pki.LeafFactory { return leaves },
 		Audit:     al,
 	}
 	go fwd.Serve(ln)

@@ -1,10 +1,13 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/kovaron/tessera/internal/crypto"
+	"github.com/kovaron/tessera/internal/pki"
 )
 
 func (h *Handlers) unlock(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +34,50 @@ func (h *Handlers) unlock(w http.ResponseWriter, r *http.Request) {
 	}
 	h.st.dek.Store(dek)
 	h.st.unlocked.Store(true)
+
+	// Build (or restore) the CA leaf factory so the forward proxy can serve TLS.
+	// Errors here are non-fatal — the path-based proxy still works without a CA.
+	h.bootstrapCA(r.Context(), dek)
+
 	w.WriteHeader(204)
+}
+
+// bootstrapCA loads or generates the CA and stores the resulting LeafFactory.
+// On any error it logs and returns without failing the unlock.
+func (h *Handlers) bootstrapCA(ctx context.Context, dek []byte) {
+	caRow, err := h.st.store.GetCA(ctx)
+	if err != nil {
+		log.Printf("admin: CA bootstrap: GetCA: %v", err)
+		return
+	}
+
+	var ca *pki.CA
+	if caRow == nil {
+		// First unlock — generate a new CA and persist it encrypted with the DEK.
+		ca, err = pki.Generate("Tessera CA")
+		if err != nil {
+			log.Printf("admin: CA bootstrap: Generate: %v", err)
+			return
+		}
+		wrapped, err := ca.WrapWithDEK(dek)
+		if err != nil {
+			log.Printf("admin: CA bootstrap: WrapWithDEK: %v", err)
+			return
+		}
+		if err := h.st.store.PutCA(ctx, wrapped); err != nil {
+			log.Printf("admin: CA bootstrap: PutCA: %v", err)
+			return
+		}
+	} else {
+		// Subsequent unlock — recover the existing CA from encrypted storage.
+		ca, err = pki.UnwrapWithDEK(dek, caRow)
+		if err != nil {
+			log.Printf("admin: CA bootstrap: UnwrapWithDEK: %v", err)
+			return
+		}
+	}
+
+	h.st.setLeafFactory(pki.NewLeafFactory(ca))
 }
 
 func (h *Handlers) lock(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +89,7 @@ func (h *Handlers) lock(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	h.st.key.Lock()
+	h.st.setLeafFactory(nil)
 	h.st.unlocked.Store(false)
 	h.st.dek.Store([]byte(nil))
 	w.WriteHeader(204)
