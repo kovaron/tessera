@@ -1,4 +1,4 @@
-.PHONY: build test lint clean
+.PHONY: build test lint clean smoke
 
 build:
 	go build -o tessera ./cmd/tessera
@@ -12,6 +12,9 @@ lint:
 
 clean:
 	rm -f tessera tessera-cli coverage.out
+
+smoke:
+	@./scripts/smoke.sh
 
 .PHONY: sidecar
 sidecar:

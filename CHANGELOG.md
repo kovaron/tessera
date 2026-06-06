@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ### Added
 - Transparent forward-proxy mode: `tessera-cli exec --upstream openai -- python my_agent.py` runs the child process with the real upstream URL (e.g. `https://api.openai.com`) while Tessera intercepts via HTTP CONNECT + on-the-fly TLS MITM. Includes a local CA (AEAD-encrypted under the DEK), `tessera-cli ca export` / `ca install` for trust setup, new `Hostnames []string` on upstreams for Host-header routing, and new admin endpoints `GET /v1/ca`, `POST /v1/ca/install`. Forward listener defaults to `127.0.0.1:8443` and is opt-in via the new `--forward-addr` daemon flag.
+- `make smoke` end-to-end test script (`scripts/smoke.sh`) that exercises the forward proxy against `httpbin.org`: direct `--proxy` call, `tessera-cli exec` wrap, unknown-host deny, upstream-mismatch deny.
+- Agent skill bundle in `skills/tessera/` — a `SKILL.md` for AI coding agents (Claude Code, Cursor, etc.) so they reach for Tessera instead of raw API keys when calling third-party services on the user's behalf.
 - Project logo, README naming explanation, OSS scaffolding (LICENSE, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CHANGELOG.md, issue + PR templates, examples directory, architecture overview).
 - Multiple policies per upstream. Policies now carry a `name` and optional `upstream_id` — a policy with no upstream is global and applies to any. `GET /v1/policies`, `GET/PUT/DELETE /v1/policies/{id}` admin endpoints. UI Policies screen reworked into a list grouped by upstream with a side-drawer editor. Token mint dropdown filters policies by the chosen upstream. Existing policies migrate forward via `ALTER TABLE` with sensible defaults (empty name, null upstream = global).
 
